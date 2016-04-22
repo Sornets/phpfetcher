@@ -176,6 +176,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
      * @desc
      */
     public function &run($arrInput = array()) {
+        //检测任务队列是否为空
         if (empty($this->_arrFetchJobs)) {
             Phpfetcher_Log::warning("No fetch jobs.");
             return $this;
@@ -188,11 +189,13 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
             $strPageClassName = strval($arrInput['page_class_name']);
         }
         try {
+            //判断自定义Page类是否存在
             if (!class_exists($strPageClassName, TRUE)) {
                 throw new Exception("[$strPageClassName] class not exists!");
             }
 
             $objPage = new $strPageClassName;
+            //判断自定义的Page类是否继承自Phpfetcher_Page_Abstract
             if (!($objPage instanceof Phpfetcher_Page_Abstract)) {
                 throw new Exception("[$strPageClassName] is not an instance of " . self::ABSTRACT_PAGE_CLASS);
             }
@@ -201,46 +204,50 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
             return $this;
         }
 
-        //初始化Page对象
+        //引入配置信息
         $arrPageConf = empty($arrInput['page_conf']) ? array() : $arrInput['page_conf'];
+        //初始化Page对象
         $objPage->init();
         if (!empty($arrPageConf)) {
             if(isset($arrPageConf['url'])) {
                 unset($arrPageConf['url']);
             }
-            $objPage->setConf($arrPageConf);
+            $objPage->setConf($arrPageConf);//调用配置函数
         }
 
         //遍历任务队列
         foreach ($this->_arrFetchJobs as $job_name => $job_rules) {
+            //检查job_rules填写是否符合规范
             if (!($this->_isJobValid($job_rules))) {
                 Phpfetcher_Log::warning("Job rules invalid [" . serialize($job_rules) . "]");
                 continue;
             }
 
-            $intDepth   = 0;
-            $intPageNum = 0;
+            $intDepth   = 0;//深度
+            $intPageNum = 0;//爬取的页面数量
             $arrIndice = array(0, 1);
-            $arrJobs = array(
-                0 => array($job_rules['start_page']),   
-                1 => array(),
+            $arrJobs = array(//需要爬取的网页？
+                0 => array($job_rules['start_page']),//pop
+                1 => array(),//push
             );
 
             //开始爬取
             while (!empty($arrJobs[$arrIndice[0]])
-                && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) 
-                && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {
+                && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) //深度不溢出
+                && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {//页码不溢出
 
                 $intDepth += 1;
-                $intPopIndex = $arrIndice[0];
-                $intPushIndex = $arrIndice[1];
+                $intPopIndex = $arrIndice[0];//==0, pop
+                $intPushIndex = $arrIndice[1];//==1, push
                 $arrJobs[$intPushIndex] = array();
+                //$arrJobs[$intPopIndex]  : 
+                //$arrJobs[$intPushIndex] : 
                 foreach ($arrJobs[$intPopIndex] as $url) {
                     if (!($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {
                         break;
                     }
-                    $objPage->setUrl($url);
-                    $objPage->read();
+                    $objPage->setUrl($url);//设置页面url
+                    $objPage->read();//读取页面内容
 
                     //获取所有的超链接
                     $arrLinks  = $objPage->getHyperLinks();
@@ -251,6 +258,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                     $arrUrlComponents = parse_url($strCurUrl);
                     
                     //匹配超链接
+                    //遍历用户自定义的link_rules
                     foreach ($job_rules['link_rules'] as $link_rule) {
                         foreach ($arrLinks as $link) {
                             //if (preg_match($link_rule, $link) === 1
@@ -258,22 +266,23 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                             //    $this->setHash($link, true);
                             //    $arrJobs[$intPushIndex][] = $link;
                             //}
+                            //寻找符合rule的链接，并且链接没有被爬过。
                             if (preg_match($link_rule, $link) === 1
                                     && !$this->getHash($link)) {
-
                                 //拼出实际的URL
-                                $real_link = $link;
+                                $real_link = $link;//?
 
                                 //不使用strpos，防止扫描整个字符串
                                 //这里只需要扫描前6个字符即可
-                                $colon_pos = false;
+                                $colon_pos = false;//冒号的位置
+
                                 for ($i = 0; $i <= 5; ++$i) {
                                     if ($link[$i] == ':') {
                                         $colon_pos = $i;
                                         break;
                                     }
                                 }
-
+                                //判断是否为站内地址
                                 if ($colon_pos === false
                                         || !$this->_objSchemeTrie->has(
                                             substr($link, 0, $colon_pos))) {
@@ -289,12 +298,12 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                                                 $link : "/$link");
                                 }
 
-                                $this->setHash($link, true);
-                                $this->setHash($real_link, true);
-                                $arrJobs[$intPushIndex][] = $real_link;
+                                $this->setHash($link, true);//记录地址
+                                $this->setHash($real_link, true);//记录地址
+                                $arrJobs[$intPushIndex][] = $real_link;//将地址加到arrJobs[$intPushIndex]里
                             }
                         }
-                    }
+                    }//foreach ($job_rules['link_rules'] as $link_rule)
 
                     //由用户实现handlePage函数
                     $objPage->setExtraInfo(array('job_name' => $job_name ));
@@ -337,6 +346,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
     protected function _isJobValid($arrRule) {
         foreach (self::$arrJobFieldTypes as $field => $type) {
             if (!isset($arrRule[$field]) || ($type === self::ARR_TYPE && !is_array($arrRule[$field]))) {
+                //当四种规则缺少一个或者对值不应当是数组的键赋值数组
                 return FALSE;
             }
         }

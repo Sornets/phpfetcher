@@ -1,3 +1,4 @@
+<meta charset="utf-8"/>
 <?php
 //下面两行使得这个项目被下载下来后本文件能直接运行
 $demo_include_path = dirname(__FILE__) . '/../';

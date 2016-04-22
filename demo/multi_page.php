@@ -6,7 +6,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
 require_once('phpfetcher.php');
 class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
-        //打印处当前页面的第1个h1标题内荣（下标从0开始）
+        //打印处当前页面的第1个h1标题内容（下标从0开始）
         $strFirstH1 = trim($page->sel('//h1', 0)->plaintext);
         if (!empty($strFirstH1)) {
             echo $page->sel('//h1', 0)->plaintext;
