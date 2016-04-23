@@ -1,4 +1,3 @@
-<meta charset="utf-8"/>
 <?php
 //下面两行使得这个项目被下载下来后本文件能直接运行
 $demo_include_path = dirname(__FILE__) . '/../';
@@ -21,17 +20,22 @@ $curl = curl_init();
 class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
         //获取标题
-        $str_title = $page->sel('//title', 0)->plaintext;//*
-        //获取文章内容
-        $arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]');
-        $str_content = '';//*
-        foreach( $arr_content as $content ){
-            $str_content .= $content->plaintext;
-            $str_content .= "<br />";
+        $str_title = $page->sel('//title', 0)->plaintext;
+        echo $str_title;
+	//获取文章内容
+        $arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]/p');
+        if( $arr_content ){
+		$str_content = '';//*
+        	foreach( $arr_content as $content ){
+       			$str_content .= $content->plaintext;
+      	     		 $str_content .= "<br />";
         }
-        //获取评论数
+	echo count( $arr_content );
+	//echo $str_content;
+        //die();
+	//获取评论数
         $obj_comment = $page->sel('//a[@id=cmtNum]', 0);
-        $news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
+	$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
         $comment_url = "http://coral.qq.com/article/$news_id/commentnum";
         // 设置你需要抓取的URL
         curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url);
@@ -65,6 +69,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
         if( @$GLOBALS['db']->exe_sql() ){
             Phpfetcher_Log::warning("insert into mysql failed!");
         }
+	}
 
     }
 }
