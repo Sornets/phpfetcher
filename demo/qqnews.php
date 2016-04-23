@@ -7,7 +7,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
 require_once('phpfetcher.php');
 
 //mysql info
-$config_tpl = array(
+$config = array(
     'db_host'       => 'localhost',
     'db_port'       => '3306',
     'db_username'   => 'root',
