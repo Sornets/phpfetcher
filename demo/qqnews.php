@@ -10,9 +10,9 @@ require_once('phpfetcher.php');
 $config_tpl = array(
     'db_host'       => 'localhost',
     'db_port'       => '3306',
-    'db_username'   => '',
-    'db_password'   => '',
-    'db_name'       => '',//库名
+    'db_username'   => 'root',
+    'db_password'   => 'sxcxs0819',
+    'db_name'       => 'qqnews',//库名
     'db_pre'        => '',//前缀
 );
 
@@ -51,7 +51,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
         //获取新闻类型
         $str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
         //获取来源
-        $obj_refer = $page->sel('span[@bosszone=jgname]/a', 0)
+        $obj_refer = $page->sel('span[@bosszone=jgname]/a', 0);
         $str_refer = $obj_refer->plaintext;
         //获取来源域名
         $arr_url = parse_url( $obj_refer->href );
