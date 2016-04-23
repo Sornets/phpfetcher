@@ -8,7 +8,7 @@
 	'db_pre' 		=> '',//前缀
 );*/
 class Phpfetcher_MySQL_Default{
-	private $_con;//连接
+	public $_con;//连接
 	public $_pre = '';
 	public $_db_name = '';
 	public function __construct( $config ){
