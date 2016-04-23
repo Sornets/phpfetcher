@@ -26,13 +26,13 @@ class Phpfetcher_MySQL_Default{
 		);
 		$this->_pre = $config['db_pre'];
 		$this->_db_name = $config['db_name'];
-		if(!$_con){
+		if(!$this->_con){
 			die("connect mysql failed!");
 		}
 	}
 
 	public function __destruct(){
-		mysql_close($_con);
+		mysql_close($this->_con);
 	}
 
 	public function exe_sql( $str ){
