@@ -20,9 +20,9 @@ class MySQL{
 		}
 		//创建数据库连接并保存
 		$this->_con = mysql_connect( 
-			$config['db_host'] . ':' . $config['port'],
-			$config['username'],
-			$config['password']
+			$config['db_host'] . ':' . $config['db_port'],
+			$config['db_username'],
+			$config['db_password']
 		);
 		$this->_pre = $config['db_pre'];
 		$this->_db_name = $config['db_name'];
