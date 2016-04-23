@@ -9,8 +9,8 @@ $config_tpl = array(
 );
 class MySQL{
 	private $_con;//连接
-	private $_pre = '';
-	private $_db_name = '';
+	public $_pre = '';
+	public $_db_name = '';
 	private function __construct( $config ){
 		//判断$config数组是否符合规范
 		foreach( $config_tpl as $key => $value ){
@@ -27,7 +27,7 @@ class MySQL{
 		$this->_pre = $config['db_pre'];
 		$this->_db_name = $config['db_name'];
 		if(!$_con){
-			Phpfetcher_Log::warning("connect mysql failed!");
+			die("connect mysql failed!");
 		}
 	}
 
