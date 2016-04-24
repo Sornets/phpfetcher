@@ -21,56 +21,58 @@ class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
         //获取标题
         $str_title = $page->sel('//title', 0)->plaintext;
-        echo $str_title;
-	//获取文章内容
+        if(	PATH_SEPARATOR == ':' ){
+			echo $str_title;
+		}
+		else{
+			echo iconv("UTF-8", "GBK", $str_title);
+		}
+		//获取文章内容
         $arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]/p');
         if( $arr_content ){
-		$str_content = '';//*
+			$str_content = '';//*
         	foreach( $arr_content as $content ){
-       			$str_content .= $content->plaintext;
-      	     		 $str_content .= "<br />";
-        }
-	echo count( $arr_content );
-	//echo $str_content;
-        //die();
-	//获取评论数
-        $obj_comment = $page->sel('//a[@id=cmtNum]', 0);
-	$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
-        $comment_url = "http://coral.qq.com/article/$news_id/commentnum";
-        // 设置你需要抓取的URL
-        curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url);
-         
-        // 设置header
-        curl_setopt($GLOBALS['curl'], CURLOPT_HEADER, 1);
-         
-        // 设置cURL 参数，要求结果保存到字符串中还是输出到屏幕上。
-        curl_setopt($GLOBALS['curl'], CURLOPT_RETURNTRANSFER, 1);
-         
-        // 运行cURL，请求网页
-        $str_json = curl_exec($GLOBALS['curl']);
-        $arr_json = json_decode($str_json, TRUE);
-        $int_comment = intval( $arr_json['data']['commentnum'] );
-        //$int_orgcomment = intval( $arr_json['data']['orgcommentnum'] );
+				$str_content .= $content->plaintext;
+      	     	$str_content .= "<br />";
+			}
+			//echo "文章段落数：" . count( $arr_content );
+			//获取评论数
+			$obj_comment = $page->sel('//a[@id=cmtNum]', 0);
+			$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
+			$comment_url = "http://coral.qq.com/article/$news_id/commentnum";
+			// 设置你需要抓取的URL
+			curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url);
+			 
+			// 设置header
+			curl_setopt($GLOBALS['curl'], CURLOPT_HEADER, 1);
+			 
+			// 设置cURL 参数，要求结果保存到字符串中还是输出到屏幕上。
+			curl_setopt($GLOBALS['curl'], CURLOPT_RETURNTRANSFER, 1);
+			 
+			// 运行cURL，请求网页
+			$str_json = curl_exec($GLOBALS['curl']);
+			$arr_json = json_decode($str_json, TRUE);
+			$int_comment = intval( $arr_json['data']['commentnum'] );
+			$int_orgcomment = intval( $arr_json['data']['orgcommentnum'] );
+			
+			//获取新闻类型
+			$str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
+			//获取来源
+			$obj_refer = $page->sel('span[@bosszone=jgname]/a', 0);
+			$str_refer = $obj_refer->plaintext;
+			//获取来源域名
+			$arr_url = parse_url( $obj_refer->href );
+			$str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
 
-        //获取新闻类型
-        $str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
-        //获取来源
-        $obj_refer = $page->sel('span[@bosszone=jgname]/a', 0);
-        $str_refer = $obj_refer->plaintext;
-        //获取来源域名
-        $arr_url = parse_url( $obj_refer->href );
-        $str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
-
-        //保存信息
-        $db_name = $GLOBALS['db']->_db_name;
-        $db_pre = $GLOBALS['db']->_pre;
-        $sql = "INSERT INTO `$db_name`.`news` VALUES ( '$str_title', $int_comment, 
-        '$str_content', '$str_refer', '$str_refer_url', '$str_type' )";
-        if( @$GLOBALS['db']->exe_sql() ){
-            Phpfetcher_Log::warning("insert into mysql failed!");
-        }
-	}
-
+			//保存信息
+			$db_name = $GLOBALS['db']->_db_name;
+			$db_pre = $GLOBALS['db']->_pre;
+			$sql = "INSERT INTO `$db_name`.`news` VALUES ( '$str_title', $int_comment, 
+			'$str_content', '$str_refer', '$str_refer_url', '$str_type' )";
+			/*if( @$GLOBALS['db']->exe_sql() ){
+				Phpfetcher_Log::warning("insert into mysql failed!");
+			}*/
+		}
     }
 }
 

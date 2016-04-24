@@ -7,6 +7,7 @@
 	'db_name' 		=> '',//库名
 	'db_pre' 		=> '',//前缀
 );*/
+echo "I'm included";
 class Phpfetcher_MySQL_Default{
 	public $_con;//连接
 	public $_pre = '';
