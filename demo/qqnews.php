@@ -15,14 +15,14 @@ $config = array(
     'db_pre'        => '',//前缀
 );
 
-//$db = new Phpfetcher_MySQL_Default( $config );
+$db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
         //获取标题
         $str_title = $page->sel('//title', 0)->plaintext;
         if(	PATH_SEPARATOR == ':' ){
-			echo $str_title;
+			echo $str_title . PHP_EOL;
 		}
 		else{
 			echo iconv("UTF-8", "GBK", $str_title);
@@ -37,9 +37,11 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			}
 			//echo "文章段落数：" . count( $arr_content );
 			//获取评论数
-			$obj_comment = $page->sel('//a[@id=cmtNum]', 0);
+			/*
+			$obj_comment = $page->sel('span[@class=r all-number-comment]/a', 0);
 			$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
 			$comment_url = "http://coral.qq.com/article/$news_id/commentnum";
+			
 			// 设置你需要抓取的URL
 			curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url);
 			 
@@ -54,24 +56,36 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$arr_json = json_decode($str_json, TRUE);
 			$int_comment = intval( $arr_json['data']['commentnum'] );
 			$int_orgcomment = intval( $arr_json['data']['orgcommentnum'] );
-			
+			*/
+			$int_comment = 0;
 			//获取新闻类型
 			$str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
+			
 			//获取来源
 			$obj_refer = $page->sel('span[@bosszone=jgname]/a', 0);
+			if( $obj_refer ){
 			$str_refer = $obj_refer->plaintext;
 			//获取来源域名
 			$arr_url = parse_url( $obj_refer->href );
 			$str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
-
-			//保存信息
-//			$db_name = $GLOBALS['db']->_db_name;
-//			$db_pre = $GLOBALS['db']->_pre;
-//			$sql = "INSERT INTO `$db_name`.`news` VALUES ( '$str_title', $int_comment, 
-//			'$str_content', '$str_refer', '$str_refer_url', '$str_type' )";
-			/*if( @$GLOBALS['db']->exe_sql() ){
+			}
+			else{
+				$str_refer = "腾讯新闻";
+				$str_refer_url = "http://news.qq.com";
+			}
+			//获取发布时间
+			$time = $page->sel('//span[@class=article-time]', 0)->plaintext;
+			
+			$time = strtotime( $time );
+						//保存信息
+			$db_name = $GLOBALS['db']->_db_name;
+			$db_pre = $GLOBALS['db']->_pre;
+			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', $int_comment, '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
+			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
+			if( !$GLOBALS['db']->exe_sql( $sql ) ){
 				Phpfetcher_Log::warning("insert into mysql failed!");
-			}*/
+				echo 'sql:' . PHP_EOL . $sql .PHP_EOL . 'sql end';
+			}
 		}
     }
 }
@@ -91,7 +105,7 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        'max_depth' => 10, 
+        'max_depth' => 2, 
         
     ) ,   
 );
