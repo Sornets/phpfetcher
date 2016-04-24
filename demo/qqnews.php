@@ -15,7 +15,7 @@ $config = array(
     'db_pre'        => '',//前缀
 );
 
-$db = new Phpfetcher_MySQL_Default( $config );
+//$db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
@@ -65,10 +65,10 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
 
 			//保存信息
-			$db_name = $GLOBALS['db']->_db_name;
-			$db_pre = $GLOBALS['db']->_pre;
-			$sql = "INSERT INTO `$db_name`.`news` VALUES ( '$str_title', $int_comment, 
-			'$str_content', '$str_refer', '$str_refer_url', '$str_type' )";
+//			$db_name = $GLOBALS['db']->_db_name;
+//			$db_pre = $GLOBALS['db']->_pre;
+//			$sql = "INSERT INTO `$db_name`.`news` VALUES ( '$str_title', $int_comment, 
+//			'$str_content', '$str_refer', '$str_refer_url', '$str_type' )";
 			/*if( @$GLOBALS['db']->exe_sql() ){
 				Phpfetcher_Log::warning("insert into mysql failed!");
 			}*/
