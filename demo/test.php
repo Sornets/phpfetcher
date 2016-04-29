@@ -81,24 +81,19 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$db_name = $GLOBALS['db']->_db_name;
 			$db_pre = $GLOBALS['db']->_pre;
 			//mysql 转码
-                        $str_content = mysql_real_escape_string( $str_content );
-                        $str_title = mysql_real_escape_string( $str_title );
-                        $str_refer = mysql_real_escape_string( $str_refer );
-                        $str_refer_url = mysql_real_escape_string( $str_refer_url );
-                        $str_type = mysql_real_escape_string( $str_type );
-
+			$str_content = mysql_real_escape_string( $str_content );
+			$str_title = mysql_real_escape_string( $str_title );
+			$str_refer = mysql_real_escape_string( $str_refer );
+			$str_refer_url = mysql_real_escape_string( $str_refer_url );
+			$str_type = mysql_real_escape_string( $str_type );
+			
 			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', $int_comment, '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
-				$check_sql = "SELECT id FROM `news` WHERE title='$str_title'";
-				if( !$GLOBALS['db']->exe_sql( $check_sql ) ){
-					Phpfetcher_Log::warning("insert into mysql failed!");
-					mysql_select_db( 'fail', $GLOBALS['db']->_con );	
-					$error_sql = "INSERT INTO `fail`( `content` ) VALUES ( '". mysql_real_escape_string($sql)  . "')";
-					$GLOBALS['db']->exe_sql( $error_sql );
-					mysql_select_db( $GLOBALS['db']->_db_name, $GLOBALS['db']->_con );
-					echo $str_title;
-				}
+				Phpfetcher_Log::warning("insert into mysql failed!");
+				//mysql_select_db( 'fail', $GLOBALS['db']->_con );	
+				echo 'sql:' . PHP_EOL . $sql .PHP_EOL . 'sql end';
+				echo $str_title;
 			}
 		}
     }
@@ -109,17 +104,17 @@ $arrJobs = array(
     //任务的名字随便起，这里把名字叫qqnews
     //the key is the name of a job, here names it qqnews
     'qqnews' => array( 
-        'start_page' => 'http://news.qq.com/', //起始网页
+        'start_page' => 'http://news.qq.com/a/20151102/042641.htm', //起始网页
         'link_rules' => array(
             /*
              * 所有在这里列出的正则规则，只要能匹配到超链接，那么那条爬虫就会爬到那条超链接
              * Regex rules are listed here, the crawler will follow any hyperlinks once the regex matches
              */
-            '#news\.qq\.com/a/\d+/\d+\.htm$#',
+            //'#news\.qq\.com/a/\d+/\d+\.htm$#',
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        'max_depth' => 100, 
+        'max_depth' => 1, 
         
     ) ,   
 );

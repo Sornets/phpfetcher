@@ -1,4 +1,4 @@
-<?
+<?php
 /*$config_tpl = array(
 	'db_host' 		=> '',
 	'db_port'		=> '3306',
@@ -7,7 +7,7 @@
 	'db_name' 		=> '',//库名
 	'db_pre' 		=> '',//前缀
 );*/
-echo "I'm included";
+
 class Phpfetcher_MySQL_Default{
 	public $_con;//连接
 	public $_pre = '';
@@ -27,6 +27,7 @@ class Phpfetcher_MySQL_Default{
 		);
 		$this->_pre = $config['db_pre'];
 		$this->_db_name = $config['db_name'];
+		mysql_select_db( $this->_db_name, $this->_con );
 		if(!$this->_con){
 			die("connect mysql failed!");
 		}
@@ -37,6 +38,6 @@ class Phpfetcher_MySQL_Default{
 	}
 
 	public function exe_sql( $str ){
-		return mysql_query( $str, $this->$_con );
+		return mysql_query( $str, $this->_con );
 	} 
 }
