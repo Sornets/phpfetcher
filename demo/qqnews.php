@@ -10,7 +10,7 @@ $config = array(
     'db_host'       => 'localhost',
     'db_port'       => '3306',
     'db_username'   => 'root',
-    'db_password'   => 'sxcxs0819',
+    'db_password'   => 'root',
     'db_name'       => 'qqnews',//库名
     'db_pre'        => '',//前缀
 );
@@ -21,7 +21,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
     public function handlePage($page) {
         //获取标题
         $str_title = $page->sel('//title', 0)->plaintext;
-       /* if(	PATH_SEPARATOR == ':' ){
+        /*if(	PATH_SEPARATOR == ':' ){
 			echo $str_title . PHP_EOL;
 		}
 		else{
@@ -37,10 +37,14 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			}
 			//echo "文章段落数：" . count( $arr_content );
 			//获取评论数
-			/*
-			$obj_comment = $page->sel('span[@class=r all-number-comment]/a', 0);
-			$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
-			$comment_url = "http://coral.qq.com/article/$news_id/commentnum";
+			
+			//$obj_comment = $page->sel('span[@class=r all-number-comment]/a', 0);
+			$str_html = $page->getContent();
+			$str_cmt_id_patten = "#(?<=cmt_id\s?=\s?)\d*(?=;)#";
+			$news_id = intval( preg_match( $str_cmt_id_patten, $str_html) );
+			echo $news_id;
+			//$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
+			/*$comment_url = "http://coral.qq.com/article/$news_id/commentnum";
 			
 			// 设置你需要抓取的URL
 			curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url);
@@ -81,11 +85,11 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$db_name = $GLOBALS['db']->_db_name;
 			$db_pre = $GLOBALS['db']->_pre;
 			//mysql 转码
-                        $str_content = mysql_real_escape_string( $str_content );
-                        $str_title = mysql_real_escape_string( $str_title );
-                        $str_refer = mysql_real_escape_string( $str_refer );
-                        $str_refer_url = mysql_real_escape_string( $str_refer_url );
-                        $str_type = mysql_real_escape_string( $str_type );
+            $str_content = mysql_real_escape_string( $str_content );
+            $str_title = mysql_real_escape_string( $str_title );
+            $str_refer = mysql_real_escape_string( $str_refer );
+            $str_refer_url = mysql_real_escape_string( $str_refer_url );
+            $str_type = mysql_real_escape_string( $str_type );
 
 			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', $int_comment, '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
@@ -109,7 +113,8 @@ $arrJobs = array(
     //任务的名字随便起，这里把名字叫qqnews
     //the key is the name of a job, here names it qqnews
     'qqnews' => array( 
-        'start_page' => 'http://news.qq.com/', //起始网页
+        //'start_page' => 'http://news.qq.com/', //起始网页
+        'start_page' => 'http://news.qq.com/a/20160421/053219.htm', 
         'link_rules' => array(
             /*
              * 所有在这里列出的正则规则，只要能匹配到超链接，那么那条爬虫就会爬到那条超链接
@@ -119,7 +124,7 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        'max_depth' => 100, 
+        'max_depth' => 1, 
         
     ) ,   
 );

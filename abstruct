@@ -41,10 +41,12 @@ $crawler->run();
 构建page对象
 对page对象进行配置
 遍历任务数组
-	如果arrJobs非空，就一直循环（每循环一次深度+1）
+	如果arrJobs[pop]非空，就一直循环（每循环一次深度+1）
+		清空Push数组
 		遍历arrJobs中pop中的url
-			读取页面、页面内的url
-			对页面内的url进行操作
+			读取页面、页面内的url（并将url保存到arrHash中）
+			对页面内的url进行操作(匹配reg，保存到arrPush中)
 			执行handlePage()
+		交换Pop与Push（交换之后Pop中是下一次while循环中需要爬取的url）
 
 

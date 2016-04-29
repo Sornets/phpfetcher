@@ -9,29 +9,29 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
 
     protected static $_arrField2CurlOpt = array(
         /* bool */
-        'include_header' => CURLOPT_HEADER,
-        'exclude_body'   => CURLOPT_NOBODY,
-        'is_post'        => CURLOPT_POST,
+        'include_header' => CURLOPT_HEADER,//启用时会将头文件的信息作为数据流输出。
+        'exclude_body'   => CURLOPT_NOBODY,//TRUE 时将不输出 BODY 部分。同时 Mehtod 变成了 HEAD。修改为 FALSE 时不会变成 GET。
+        'is_post'        => CURLOPT_POST,//
         'is_verbose'     => CURLOPT_VERBOSE,
-        'return_transfer'=> CURLOPT_RETURNTRANSFER,
+        'return_transfer'=> CURLOPT_RETURNTRANSFER,//true:将服务器返回的内容以字符串形式返回，false:直接输出
 
         /* int */
         'buffer_size'       => CURLOPT_BUFFERSIZE,
-        'connect_timeout'   => CURLOPT_CONNECTTIMEOUT,
-        'connect_timeout_ms' => CURLOPT_CONNECTTIMEOUT_MS,
+        'connect_timeout'   => CURLOPT_CONNECTTIMEOUT,//等待时间(s)
+        'connect_timeout_ms' => CURLOPT_CONNECTTIMEOUT_MS,//等待时间(ms)
         'dns_cache_timeout' => CURLOPT_DNS_CACHE_TIMEOUT,
-        'max_redirs'        => CURLOPT_MAXREDIRS,
+        'max_redirs'        => CURLOPT_MAXREDIRS,//最大重定向次数
         'port'              => CURLOPT_PORT,
-        'timeout'           => CURLOPT_TIMEOUT,
-        'timeout_ms'        => CURLOPT_TIMEOUT_MS,
+        'timeout'           => CURLOPT_TIMEOUT,//curl函数执行的秒数(s)
+        'timeout_ms'        => CURLOPT_TIMEOUT_MS,//curl函数执行的秒数(ms)
 
         /* string */
         'cookie'            => CURLOPT_COOKIE,
         'cookie_file'       => CURLOPT_COOKIEFILE,
         'cookie_jar'        => CURLOPT_COOKIEJAR,
         'post_fields'       => CURLOPT_POSTFIELDS,
-        'url'               => CURLOPT_URL,
-        'user_agent'        => CURLOPT_USERAGENT,
+        'url'               => CURLOPT_URL, // 需要获取的 URL 地址，也可以在curl_init() 初始化会话的时候。
+        'user_agent'        => CURLOPT_USERAGENT,// 在HTTP请求中包含一个"User-Agent: "头的字符串。
         'user_pwd'          => CURLOPT_USERPWD,
 
         /* array */
@@ -44,6 +44,7 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
         'write_function'    => CURLOPT_WRITEFUNCTION,
     );
 
+    //page 对象的默认配置
     protected $_arrDefaultConf = array(
             'connect_timeout' => 10,
             'max_redirs'      => 10,
@@ -53,12 +54,12 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
             'user_agent'      => 'firefox'
     );
 
-    protected $_arrConf    = array();
+    protected $_arrConf    = array();//page对象的配置
     protected $_arrExtraInfo = array();
     protected $_bolCloseCurlHandle = FALSE;
-    protected $_curlHandle = NULL;
+    protected $_curlHandle = NULL;//curl句柄
     protected $_dom        = NULL;
-    //protected $_xml        = NULL;
+    //protected $_xml      = NULL;
 
     public function __construct() {
     }
@@ -148,12 +149,12 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
     public function init($curl_handle = NULL, $conf = array()) {
         $this->_curlHandle = $curl_handle;
         if (empty($this->_curlHandle)) {
-            $this->_curlHandle = curl_init();
+            $this->_curlHandle = curl_init();//初始化curl handle
             $this->_bolCloseCurlHandle = TRUE;
         }
-        $this->_arrConf = $this->_arrDefaultConf;
+        $this->_arrConf = $this->_arrDefaultConf;//_arrConf初始化
 
-        $this->setConf($conf, TRUE);
+        $this->setConf($conf, TRUE);//用$conf参数对page对象进行配置
 
         return $this;
     }
@@ -221,11 +222,13 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
         if ($clear_previous_conf === TRUE) {
             $this->_arrConf = $this->_arrDefaultConf;
         }
-        foreach ($conf as $k => $v) {
+        /*foreach ($conf as $k => $v) {
             $this->_arrConf[$k] = $v;
-        }
+        }*/
+        $this->_arrConf += $conf;
 
         $bolRes = TRUE;
+
         if ($clear_previous_conf === TRUE) {
             $bolRes = $this->_setConf($this->_arrConf);
         } else {
@@ -358,6 +361,10 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
                 Phpfetcher_Log::warning('Failed to call $this->_dom->loadHTML');
                 $this->_dom      = NULL;
             } 
+        }
+        else{
+            //fix 404 bug
+            $this->_strContent = "";
         }
         return $this->_strContent;
     }
