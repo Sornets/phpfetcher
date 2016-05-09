@@ -34,7 +34,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
      */
 
     protected $_arrFetchJobs = array();//爬虫任务数据
-    protected $_arrHash = array();//
+    protected $_arrHash = array();//保存爬取过得url?
     protected $_arrAdditionalUrls = array();
     protected $_objSchemeTrie = array(); //合法url scheme的字典树
     //protected $_objPage = NULL; //Phpfetcher_Page_Default;
@@ -231,7 +231,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                 1 => array(),//intPushIndex
             );
 
-            //开始爬取当前任务
+            //开始爬取当前任务//while循环一次就代表爬取深了一层
             while (!empty($arrJobs[$arrIndice[0]])//如果$arrJobs[0]不为空//用$arrIndice有意思吗?
                 && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) //深度不溢出
                 && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {//页码不溢出
