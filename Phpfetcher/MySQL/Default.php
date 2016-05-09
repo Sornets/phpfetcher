@@ -37,6 +37,6 @@ class Phpfetcher_MySQL_Default{
 	}
 
 	public function exe_sql( $str ){
-		return mysql_query( $str, $this->$_con );
+		return mysql_query( $str, $this->_con );
 	} 
 }
