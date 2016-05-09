@@ -34,7 +34,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
      */
 
     protected $_arrFetchJobs = array();//爬虫任务数据
-    protected $_arrHash = array();//保存爬取过得url?
+    protected $_arrHash = array();//用hash形式保存爬取过的url
     protected $_arrAdditionalUrls = array();
     protected $_objSchemeTrie = array(); //合法url scheme的字典树
     //protected $_objPage = NULL; //Phpfetcher_Page_Default;
@@ -240,8 +240,8 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                 $intPopIndex = $arrIndice[0];//==0, pop
                 $intPushIndex = $arrIndice[1];//==1, push
                 $arrJobs[$intPushIndex] = array();//将push url数组置空！
-                //$arrJobs[$intPopIndex]  : 
-                //$arrJobs[$intPushIndex] : 
+                //$arrJobs[$intPopIndex]  : 用来保存上一深度中需要爬取的url
+                //$arrJobs[$intPushIndex] : 用来保存当前深度中需要爬取的url
                 foreach ($arrJobs[$intPopIndex] as $url) {//遍历$arrJobs中的url
                     if (!($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {
                         //如果页数超标，结束

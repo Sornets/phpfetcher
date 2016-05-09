@@ -4,12 +4,12 @@ function __phpfetcher_autoload($strClassName) {
     if (substr($strClassName, 0, strlen('Phpfetcher_')) === 'Phpfetcher_') {
 		if(PATH_SEPARATOR == ':'){
 			//linux
-			echo PHPFETCHER_PATH . '/' . str_replace('_', '/', $strClassName) . '.php' . '123';
+			echo "require : " . PHPFETCHER_PATH . '/' . str_replace('_', '/', $strClassName) . '.php' . PHP_EOL;
 			require_once PHPFETCHER_PATH . '/' . str_replace('_', '/', $strClassName) . '.php';
 		}
 		else{
 			//windows
-			echo PHPFETCHER_PATH . '\\' . str_replace('_', '\\', $strClassName) . '.php' . '123';
+			echo "require : " . PHPFETCHER_PATH . '\\' . str_replace('_', '\\', $strClassName) . '.php' . PHP_EOL;
 			require_once PHPFETCHER_PATH . '\\' . str_replace('_', '\\', $strClassName) . '.php';
 		}
 	}
