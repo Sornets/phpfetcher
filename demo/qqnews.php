@@ -40,9 +40,14 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			
 			//$obj_comment = $page->sel('span[@class=r all-number-comment]/a', 0);
 			$str_html = $page->getContent();
-			$str_cmt_id_patten = "#(?<=cmt_id\s?=\s?)\d*(?=;)#";
-			$news_id = intval( preg_match( $str_cmt_id_patten, $str_html) );
-			echo $news_id;
+			$str_cmt_id_patten = "#cmt_id\s?=\s?\d*;#";
+			preg_match( $str_cmt_id_patten, $str_html, $matches );
+			$matches[0] = str_replace( "cmt_id = ", "", $matches[0] );
+			$matches[0] = str_replace( ";", "", $matches[0] );
+			$cmt_id = intval( $matches[0] );
+			var_dump( $matches );
+			var_dump( $cmt_id );
+			
 			//$news_id = intval( str_replace( "http://coral.qq.com/", "", $obj_comment->href ) );
 			/*$comment_url = "http://coral.qq.com/article/$news_id/commentnum";
 			
@@ -124,7 +129,8 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        'max_depth' => 1, 
+        'max_depth' => 2,
+	'max_page' => 5, 
         
     ) ,   
 );
