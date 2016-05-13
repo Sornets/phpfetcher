@@ -41,7 +41,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 
 			if( $cmt_id ){
 				$next_cmt_id = 0;
-				$comment_url = "http://coral.qq.com/article/$news_id/comment";
+				$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
 				//循环获取json评论
 				do{
 					// 设置你需要抓取的URL
@@ -63,21 +63,49 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 						foreach( $arr_json['data']['commentid'] as $comment ){
 							$user = $comment['userinfo'];
 							$weibo = $comment['userinfo']['wbuserinfo'];
-							$str_comment_sql = "INSERT INTO `comments`(`id`, `rootid`, `targetid`, `parent`, `timeDifference`, `time`, `content`, `title`, `up`, `rep`, `type`, `hotscale`, `checktype`, `checkstatus`, `isdeleted`, `tagself`, `taghost`, `source`, `location`, `address`, `rank`, `custom`, `extend_at`, `extend_ut`, `orireplynum`, `richtype`, `userid`, `poke`, `abstract`, `thirdid`, `replyuser`, `replyuserid`, `replyhwvip`, `replyhwlevel`, `replyhwannual`, `remark`, `fnd`, `create_time`, `update_time`, `analysis_time`) VALUES ($comment[id], $comment[rootid], $comment[targetid], $comment[parent], '$comment[timeDifference]', $comment[time], '$comment[content]', '$comment[title]', $comment[up], $comment[rep], $comment[type], $comment[hotscale], $comment[checktype], $comment[checkstatus], $comment[isdeleted], '$comment[tagself]', '$comment[taghost]', $comment[source], '$comment[location]', '$comment[address]', $comment[rank], '$comment[custom]', {$comment['extend']['at']}, {$comment['extend']['ut'], $comment[orireplynum], $comment[richtype], $comment[userid], $comment[poke], '$comment[abstract]', '$comment[thirdid]', '$comment[replyuser]', $comment[replyuserid], $comment[replyhwvip], $comment[replyhwlevel], $comment[replyhwannual], '$comment[remark]', $comment[fnd], $get_time, $get_time, 0 )";
+							$str_comment_sql = "INSERT INTO `comments`(
+													`id`, `rootid`, `targetid`, `parent`, 
+													`timeDifference`, `time`, `content`, 
+													`title`, `up`, `rep`, `type`, 
+													`hotscale`, `checktype`, `checkstatus`, 
+													`isdeleted`, `tagself`, `taghost`, 
+													`source`, `location`, `address`, 
+													`rank`, `custom`, `extend_at`, 
+													`extend_ut`, `orireplynum`, 
+													`richtype`, `userid`, `poke`, 
+													`abstract`, `thirdid`, `replyuser`, 
+													`replyuserid`, `replyhwvip`, `replyhwlevel`, 
+													`replyhwannual`, `remark`, `fnd`, 
+													`create_time`, `update_time`, `analysis_time`
+												) VALUES (
+													$comment[id], $comment[rootid], $comment[targetid], $comment[parent], 
+													'$comment[timeDifference]', $comment[time], '$comment[content]', 
+													'$comment[title]', $comment[up], $comment[rep], $comment[type], 
+													$comment[hotscale], $comment[checktype], $comment[checkstatus], 
+													$comment[isdeleted], '$comment[tagself]', '$comment[taghost]', 
+													$comment[source], '$comment[location]', '$comment[address]', 
+													$comment[rank], '$comment[custom]', {$comment['extend']['at']}, 
+													{$comment['extend']['ut'], $comment[orireplynum], 
+													$comment[richtype], $comment[userid], $comment[poke], 
+													'$comment[abstract]', '$comment[thirdid]', '$comment[replyuser]', 
+													$comment[replyuserid], $comment[replyhwvip], $comment[replyhwlevel],
+													$comment[replyhwannual], '$comment[remark]', $comment[fnd], 
+													$get_time, $get_time, 0 
+												)";
 							$GLOBALS['db']->exe_sql( $str_comment_sql );
 
 							$str_user_sql = "INSERT INTO `users`(
-											`userid`, `uidex`, `nick`, `head`, 
-											`gender`, `viptype`, `mediaid`, `region`, 
-											`thirdlogin`, `hwvip`, `hwlevel`, 
-											`hwannual`, `identity`, `wb_name`, 
-											`wb_nick`, `wb_url`, `wb_vip`, `wb_ep`, 
-											`wb_brife`, `wb_identification`, 
-											`wb_intro`, `wb_live_country`, `wb_live_province`, 
-											`wb_live_city`, `wb_live_area`, 
-											`wb_gender`, `wb_level`, `wb_classify`
-										) 
-										VALUES 
+												`userid`, `uidex`, `nick`, `head`, 
+												`gender`, `viptype`, `mediaid`, `region`, 
+												`thirdlogin`, `hwvip`, `hwlevel`, 
+												`hwannual`, `identity`, `wb_name`, 
+												`wb_nick`, `wb_url`, `wb_vip`, `wb_ep`, 
+												`wb_brife`, `wb_identification`, 
+												`wb_intro`, `wb_live_country`, `wb_live_province`, 
+												`wb_live_city`, `wb_live_area`, 
+												`wb_gender`, `wb_level`, `wb_classify`
+											) 
+											VALUES 
 											(
 												$user[userid], '$user[uidex]', '$user[nick]', '$user[head]', 
 												$user[gender], $user[viptype], $user[mediaid], 
