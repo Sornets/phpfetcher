@@ -4,7 +4,7 @@ $demo_include_path = dirname(__FILE__) . '/../';
 set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
 
 require_once('phpfetcher.php');
-
+require_once('lib.php');
 //mysql info
 $config = array(
     'db_host'       => 'localhost',
@@ -57,12 +57,11 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 					 
 					// 运行cURL，请求网页
 					$str_json = curl_exec($GLOBALS['curl']);
-//print_r($str_json);
-					$str_json = substr( $str_json, 12, -1 );
+					$str_json = substr( $str_json, 12, -1 )
 					$arr_json = json_decode($str_json, TRUE);
-
-					if( $arr_json && $arr_json['errCode'] == 0 ){					
-						//var_dump($arr_json);
+					mysql_real_escape_arr( $arr_json );
+					if( $arr_json && $arr_json['errCode'] == 0 ){
+						
 						$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
 						$get_time = $arr_json['info']['time'];
 						$error_count = 0;
@@ -107,8 +106,11 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 													'$comment[replyhwannual]', 
 													'$get_time', '$get_time', 0 
 												)";
+							$str_comment_sql = mysql_real_escape_string( $str_comment_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
 							if( !$res ){
+								$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
+								$GLOBALS['db']->exe_sql( $error_sql );
 								echo $str_comment_sql;
 							}
 							
@@ -130,9 +132,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 												`wb_intro`, `wb_live_country`, `wb_live_province`, 
 												`wb_live_city`, `wb_live_area`, 
 												`wb_gender`, `wb_level`, `wb_classify`
-											) 
-											VALUES 
-											(
+											) VALUES (
 												'$user[userid]', '$user[uidex]', '$user[nick]', '$user[head]', 
 												'$user[gender]', '$user[viptype]', '$user[mediaid]', 
 												'$user[region]', '$user[thirdlogin]', '$user[hwvip]', 
@@ -143,6 +143,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 												'{$weibo['liveaddr']['province']}', '{$weibo['liveaddr']['city']}', '{$weibo['liveaddr']['area']}', 
 												'$weibo[gender]', '$weibo[level]', '$weibo[classify]'
 											)";
+							$str_user_sql = mysql_real_escape_string( $str_user_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_user_sql);
 							if( !$res ){
 								echo $str_user_sql;
@@ -160,6 +161,17 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 
 				$int_comment = $arr_json['data']['total'];
 			}
+			
+			//检查数据库中是否已经存在当前新闻
+			$str_has_sql = "SELECT id FROM `news` WHERE title='$str_title'";
+			$has_this_news_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
+			$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
+			//print_r( $has_this_user );
+			if( $has_this_news ){
+				//echo "id $user[userid] continued." . PHP_EOL;
+				return;
+			}
+
 			//获取新闻类型
 			@$str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
 			
@@ -189,20 +201,13 @@ class mycrawler extends Phpfetcher_Crawler_Default {
             $str_refer_url = mysql_real_escape_string( $str_refer_url );
             $str_type = mysql_real_escape_string( $str_type );
 
-			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', $int_comment, '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
+			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
-				$check_sql = "SELECT id FROM `news` WHERE title='$str_title'";
-				if( !$GLOBALS['db']->exe_sql( $check_sql ) ){
-					Phpfetcher_Log::warning("insert into mysql failed!");
-					//mysql_select_db( 'fail', $GLOBALS['db']->_con );	
-					$error_sql = "INSERT INTO `fail`( `content` ) VALUES ( '". mysql_real_escape_string($sql)  . "')";
-					$GLOBALS['db']->exe_sql( $error_sql );
-					//mysql_select_db( $GLOBALS['db']->_db_name, $GLOBALS['db']->_con );
-					echo $str_title;
-				}
+				$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
+				$GLOBALS['db']->exe_sql( $error_sql );
 			}
-		}
+		}//if( $arr_content )
     }
 }
 
@@ -222,9 +227,10 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        //'max_depth' => 100,
-	//'max_pages' => 3, 
-        
+	//'max_depth' => 100,
+	//'max_pages' => 3,
+        'max_depth' => 2,
+	'max_pages' => 3, 
     ) ,   
 );
 
