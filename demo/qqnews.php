@@ -109,6 +109,8 @@ echo $temp_url;
 							$str_comment_sql = mysql_real_escape_string( $str_comment_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
 							if( !$res ){
+								$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
+								$GLOBALS['db']->exe_sql( $error_sql );
 								echo $str_comment_sql;
 							}
 							
@@ -159,6 +161,17 @@ echo $temp_url;
 
 				$int_comment = $arr_json['data']['total'];
 			}
+			
+			//检查数据库中是否已经存在当前新闻
+			$str_has_sql = "SELECT id FROM `news` WHERE title='$str_title'";
+			$has_this_news_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
+			$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
+			//print_r( $has_this_user );
+			if( $has_this_news ){
+				//echo "id $user[userid] continued." . PHP_EOL;
+				return;
+			}
+
 			//获取新闻类型
 			@$str_type = $page->sel('span[@bosszone=ztTopic]/a', 0)->plaintext;
 			
@@ -191,17 +204,10 @@ echo $temp_url;
 			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
-				$check_sql = "SELECT id FROM `news` WHERE title='$str_title'";
-				if( !$GLOBALS['db']->exe_sql( $check_sql ) ){
-					Phpfetcher_Log::warning("insert into mysql failed!");
-					//mysql_select_db( 'fail', $GLOBALS['db']->_con );	
-					$error_sql = "INSERT INTO `fail`( `content` ) VALUES ( '". mysql_real_escape_string($sql)  . "')";
-					$GLOBALS['db']->exe_sql( $error_sql );
-					//mysql_select_db( $GLOBALS['db']->_db_name, $GLOBALS['db']->_con );
-					echo $str_title;
-				}
+				$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
+				$GLOBALS['db']->exe_sql( $error_sql );
 			}
-		}
+		}//if( $arr_content )
     }
 }
 
@@ -222,7 +228,7 @@ $arrJobs = array(
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
         'max_depth' => 2,
-	'max_pages' => 3, 
+		'max_pages' => 3, 
         
     ) ,   
 );
