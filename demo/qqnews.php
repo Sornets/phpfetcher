@@ -33,12 +33,17 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			//获取文章id
 			$str_html = $page->getContent();
 			$str_cmt_id_patten = "#cmt_id\s?=\s?\d*;#";
-			preg_match( $str_cmt_id_patten, $str_html, $matches );
-			$matches[0] = str_replace( "cmt_id = ", "", $matches[0] );
-			$matches[0] = str_replace( ";", "", $matches[0] );
-			$cmt_id = intval( $matches[0] );
-			$error_count = 0;
-
+			$match_count = preg_match( $str_cmt_id_patten, $str_html, $matches );
+			if( $match_count == 0 ){
+				$cmt_id = 0;
+				$int_comment = -1;
+			}
+			else{
+				$matches[0] = str_replace( "cmt_id = ", "", $matches[0] );
+				$matches[0] = str_replace( ";", "", $matches[0] );
+				$cmt_id = intval( $matches[0] );
+				$error_count = 0;
+			}
 			if( $cmt_id ){
 				$next_cmt_id = 0;
 				$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
@@ -57,7 +62,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 					 
 					// 运行cURL，请求网页
 					$str_json = curl_exec($GLOBALS['curl']);
-					$str_json = substr( $str_json, 12, -1 )
+					$str_json = substr( $str_json, 12, -1 );
 					$arr_json = json_decode($str_json, TRUE);
 					mysql_real_escape_arr( $arr_json );
 					if( $arr_json && $arr_json['errCode'] == 0 ){
@@ -106,7 +111,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 													'$comment[replyhwannual]', 
 													'$get_time', '$get_time', 0 
 												)";
-							$str_comment_sql = mysql_real_escape_string( $str_comment_sql );
+							//$str_comment_sql = mysql_real_escape_string( $str_comment_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
 							if( !$res ){
 								$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
@@ -143,7 +148,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 												'{$weibo['liveaddr']['province']}', '{$weibo['liveaddr']['city']}', '{$weibo['liveaddr']['area']}', 
 												'$weibo[gender]', '$weibo[level]', '$weibo[classify]'
 											)";
-							$str_user_sql = mysql_real_escape_string( $str_user_sql );
+							//$str_user_sql = mysql_real_escape_string( $str_user_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_user_sql);
 							if( !$res ){
 								echo $str_user_sql;
@@ -228,9 +233,9 @@ $arrJobs = array(
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
 	//'max_depth' => 100,
-	//'max_pages' => 3,
-        'max_depth' => 2,
-	'max_pages' => 3, 
+	//'max_pages' => 100,
+        //'max_depth' => 2,
+	//'max_pages' => 3, 
     ) ,   
 );
 
