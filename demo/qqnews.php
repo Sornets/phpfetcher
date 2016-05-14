@@ -45,7 +45,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 				//循环获取json评论
 				do{
 					$temp_url = $comment_url . "?commentid=$next_cmt_id&reqnum=20&callback=mainComment";
-echo $temp_url;
+//echo $temp_url;
 					// 设置你需要抓取的URL
 					curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url . "?commentid=$next_cmt_id&reqnum=20&callback=mainComment");
 					 
@@ -67,7 +67,7 @@ echo $temp_url;
 						$get_time = $arr_json['info']['time'];
 						$error_count = 0;
 						foreach( $arr_json['data']['commentid'] as $comment ){
-							echo "cmt_id:$comment[id], user_id:" . $comment['userinfo']['userid'] . PHP_EOL;
+							//echo "cmt_id:$comment[id], user_id:" . $comment['userinfo']['userid'] . PHP_EOL;
 							$str_has_sql = "SELECT `id` FROM `comments` WHERE id=$comment[id]";
 							$has_this_cmt_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
 							$has_this_cmt = mysql_fetch_assoc( $has_this_cmt_handle );
@@ -78,7 +78,7 @@ echo $temp_url;
 							}
 							$user = $comment['userinfo'];
 							$weibo = $comment['userinfo']['wbuserinfo'];
-							$str_comment_sql = "INSERT INTO `comments`(
+							@$str_comment_sql = "INSERT INTO `comments`(
 													`id`, `rootid`, `targetid`, `parent`, 
 													`timeDifference`, `time`, `content`, 
 													`title`, `up`, `rep`, `type`, 
@@ -120,7 +120,7 @@ echo $temp_url;
 								//echo "id $user[userid] continued." . PHP_EOL;
 								continue;
 							}
-							$str_user_sql = "INSERT INTO `users`(
+							@$str_user_sql = "INSERT INTO `users`(
 												`userid`, `uidex`, `nick`, `head`, 
 												`gender`, `viptype`, `mediaid`, `region`, 
 												`thirdlogin`, `hwvip`, `hwlevel`, 
@@ -222,8 +222,8 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
-        'max_depth' => 2,
-	'max_pages' => 3, 
+        //'max_depth' => 100,
+	//'max_pages' => 3, 
         
     ) ,   
 );
