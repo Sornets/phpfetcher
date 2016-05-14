@@ -4,7 +4,7 @@ $demo_include_path = dirname(__FILE__) . '/../';
 set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
 
 require_once('phpfetcher.php');
-
+require_once('lib.php');
 //mysql info
 $config = array(
     'db_host'       => 'localhost',
@@ -59,9 +59,9 @@ echo $temp_url;
 					$str_json = curl_exec($GLOBALS['curl']);
 					$str_json = substr( $str_json, 12, -1 )
 					$arr_json = json_decode($str_json, TRUE);
-
-					if( $arr_json && $arr_json['errCode'] == 0 ){					
-						//var_dump($arr_json);
+					mysql_real_escape_arr( $arr_json );
+					if( $arr_json && $arr_json['errCode'] == 0 ){
+						
 						$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
 						$get_time = $arr_json['info']['time'];
 						$error_count = 0;
@@ -106,6 +106,7 @@ echo $temp_url;
 													'$comment[replyhwannual]', 
 													'$get_time', '$get_time', 0 
 												)";
+							$str_comment_sql = mysql_real_escape_string( $str_comment_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
 							if( !$res ){
 								echo $str_comment_sql;
@@ -140,6 +141,7 @@ echo $temp_url;
 												'{$weibo['liveaddr']['province']}', '{$weibo['liveaddr']['city']}', '{$weibo['liveaddr']['area']}', 
 												'$weibo[gender]', '$weibo[level]', '$weibo[classify]'
 											)";
+							$str_user_sql = mysql_real_escape_string( $str_user_sql );
 							$res = $GLOBALS['db']->exe_sql( $str_user_sql);
 							if( !$res ){
 								echo $str_user_sql;
@@ -186,7 +188,7 @@ echo $temp_url;
             $str_refer_url = mysql_real_escape_string( $str_refer_url );
             $str_type = mysql_real_escape_string( $str_type );
 
-			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', $int_comment, '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
+			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
 				$check_sql = "SELECT id FROM `news` WHERE title='$str_title'";
