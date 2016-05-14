@@ -55,6 +55,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 					 
 					// 运行cURL，请求网页
 					$str_json = curl_exec($GLOBALS['curl']);
+					var_dump( $str_json );
 					$arr_json = json_decode($str_json, TRUE);
 					if( $arr_json && $arr_json['errCode'] == 0 ){
 						$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
@@ -85,7 +86,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 													$comment[isdeleted], '$comment[tagself]', '$comment[taghost]', 
 													$comment[source], '$comment[location]', '$comment[address]', 
 													$comment[rank], '$comment[custom]', {$comment['extend']['at']}, 
-													{$comment['extend']['ut'], $comment[orireplynum], 
+													{$comment['extend']['ut']}, $comment[orireplynum], 
 													$comment[richtype], $comment[userid], $comment[poke], 
 													'$comment[abstract]', '$comment[thirdid]', '$comment[replyuser]', 
 													$comment[replyuserid], $comment[replyhwvip], $comment[replyhwlevel],
