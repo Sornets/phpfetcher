@@ -44,24 +44,37 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 				$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
 				//循环获取json评论
 				do{
+					$temp_url = $comment_url . "?commentid=$next_cmt_id&reqnum=20&callback=mainComment";
+echo $temp_url;
 					// 设置你需要抓取的URL
 					curl_setopt($GLOBALS['curl'], CURLOPT_URL, $comment_url . "?commentid=$next_cmt_id&reqnum=20&callback=mainComment");
 					 
 					// 设置header
-					curl_setopt($GLOBALS['curl'], CURLOPT_HEADER, 1);
+					//curl_setopt($GLOBALS['curl'], CURLOPT_HEADER, 1);
 					 
 					// 设置cURL 参数，要求结果保存到字符串中还是输出到屏幕上。
 					curl_setopt($GLOBALS['curl'], CURLOPT_RETURNTRANSFER, 1);
 					 
 					// 运行cURL，请求网页
 					$str_json = curl_exec($GLOBALS['curl']);
-					var_dump( $str_json );
+					$str_json = substr( $str_json, 12, -1 )
 					$arr_json = json_decode($str_json, TRUE);
-					if( $arr_json && $arr_json['errCode'] == 0 ){
+
+					if( $arr_json && $arr_json['errCode'] == 0 ){					
+						//var_dump($arr_json);
 						$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
 						$get_time = $arr_json['info']['time'];
 						$error_count = 0;
 						foreach( $arr_json['data']['commentid'] as $comment ){
+							echo "cmt_id:$comment[id], user_id:" . $comment['userinfo']['userid'] . PHP_EOL;
+							$str_has_sql = "SELECT `id` FROM `comments` WHERE id=$comment[id]";
+							$has_this_cmt_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
+							$has_this_cmt = mysql_fetch_assoc( $has_this_cmt_handle );
+							//print_r($has_this_cmt);
+							if( $has_this_cmt ){
+								//echo "id: $comment[id],next line is continue" . PHP_EOL;
+								continue;
+							}
 							$user = $comment['userinfo'];
 							$weibo = $comment['userinfo']['wbuserinfo'];
 							$str_comment_sql = "INSERT INTO `comments`(
@@ -70,31 +83,42 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 													`title`, `up`, `rep`, `type`, 
 													`hotscale`, `checktype`, `checkstatus`, 
 													`isdeleted`, `tagself`, `taghost`, 
-													`source`, `location`, `address`, 
+													`source`, `lat`, `lng`, `locationaddress`, `locationname`, 
 													`rank`, `custom`, `extend_at`, 
 													`extend_ut`, `orireplynum`, 
 													`richtype`, `userid`, `poke`, 
 													`abstract`, `thirdid`, `replyuser`, 
 													`replyuserid`, `replyhwvip`, `replyhwlevel`, 
-													`replyhwannual`, `remark`, `fnd`, 
+													`replyhwannual`, 
 													`create_time`, `update_time`, `analysis_time`
 												) VALUES (
-													$comment[id], $comment[rootid], $comment[targetid], $comment[parent], 
-													'$comment[timeDifference]', $comment[time], '$comment[content]', 
-													'$comment[title]', $comment[up], $comment[rep], $comment[type], 
-													$comment[hotscale], $comment[checktype], $comment[checkstatus], 
-													$comment[isdeleted], '$comment[tagself]', '$comment[taghost]', 
-													$comment[source], '$comment[location]', '$comment[address]', 
-													$comment[rank], '$comment[custom]', {$comment['extend']['at']}, 
-													{$comment['extend']['ut']}, $comment[orireplynum], 
-													$comment[richtype], $comment[userid], $comment[poke], 
+													'$comment[id]', '$comment[rootid]', '$comment[targetid]', '$comment[parent]', 
+													'$comment[timeDifference]', '$comment[time]', '$comment[content]', 
+													'$comment[title]', '$comment[up]', '$comment[rep]', '$comment[type]', 
+													'$comment[hotscale]', '$comment[checktype]', '$comment[checkstatus]', 
+													'$comment[isdeleted]', '$comment[tagself]', '$comment[taghost]', 
+													'$comment[source]', '". @$comment['location']['lat']."','" . @$comment['location']['lng'] . "', '" . @$comment['address']['locationaddress'] . " ','" . @$comment['address']['locationname'] . "', 
+													'$comment[rank]', '$comment[custom]', '{$comment['extend']['at']}', 
+													'{$comment['extend']['ut']}', '$comment[orireplynum]', 
+													'$comment[richtype]', '$comment[userid]', '$comment[poke]', 
 													'$comment[abstract]', '$comment[thirdid]', '$comment[replyuser]', 
-													$comment[replyuserid], $comment[replyhwvip], $comment[replyhwlevel],
-													$comment[replyhwannual], '$comment[remark]', $comment[fnd], 
-													$get_time, $get_time, 0 
+													'$comment[replyuserid]', '$comment[replyhwvip]', '$comment[replyhwlevel]',
+													'$comment[replyhwannual]', 
+													'$get_time', '$get_time', 0 
 												)";
-							$GLOBALS['db']->exe_sql( $str_comment_sql );
-
+							$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
+							if( !$res ){
+								echo $str_comment_sql;
+							}
+							
+							$str_has_sql = "SELECT `userid` FROM `users` WHERE userid=$user[userid]";
+							$has_this_user_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
+							$has_this_user = mysql_fetch_assoc( $has_this_user_handle );
+							//print_r( $has_this_user );
+							if( $has_this_user ){
+								//echo "id $user[userid] continued." . PHP_EOL;
+								continue;
+							}
 							$str_user_sql = "INSERT INTO `users`(
 												`userid`, `uidex`, `nick`, `head`, 
 												`gender`, `viptype`, `mediaid`, `region`, 
@@ -105,20 +129,21 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 												`wb_intro`, `wb_live_country`, `wb_live_province`, 
 												`wb_live_city`, `wb_live_area`, 
 												`wb_gender`, `wb_level`, `wb_classify`
-											) 
-											VALUES 
-											(
-												$user[userid], '$user[uidex]', '$user[nick]', '$user[head]', 
-												$user[gender], $user[viptype], $user[mediaid], 
-												'$user[region], $user[thirdlogin], $user[hwvip], 
-												$user[hwlevel], $user[hwannual], $user[identity], 
+											) VALUES (
+												'$user[userid]', '$user[uidex]', '$user[nick]', '$user[head]', 
+												'$user[gender]', '$user[viptype]', '$user[mediaid]', 
+												'$user[region]', '$user[thirdlogin]', '$user[hwvip]', 
+												'$user[hwlevel]', '$user[hwannual]', '$user[identity]', 
 												'$weibo[name]', '$weibo[nick]', '$weibo[url]', 
-												$weibo[vip], $weibo[ep], '$weibo[brief]', 
-												'$weibo[identification]', '$weibo[intro]', {$weibo['liveaddr']['country']}, 
-												{$weibo['liveaddr']['province']}, {$weibo['liveaddr']['city']}, {$weibo['liveaddr']['area']}, 
-												$weibo[gender], $weibo[level], '$weibo[classify]'
+												'$weibo[vip]', '$weibo[ep]', '$weibo[brief]', 
+												'$weibo[identification]', '$weibo[intro]', '{$weibo['liveaddr']['country']}', 
+												'{$weibo['liveaddr']['province']}', '{$weibo['liveaddr']['city']}', '{$weibo['liveaddr']['area']}', 
+												'$weibo[gender]', '$weibo[level]', '$weibo[classify]'
 											)";
-							$GLOBALS['db']->exe_sql( $str_user_sql);
+							$res = $GLOBALS['db']->exe_sql( $str_user_sql);
+							if( !$res ){
+								echo $str_user_sql;
+							}
 						}
 					}
 					else{
@@ -195,7 +220,7 @@ $arrJobs = array(
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
         //Crawler's max following depth, 1 stands for only crawl the start page
         'max_depth' => 2,
-	'max_page' => 2, 
+	'max_pages' => 3, 
         
     ) ,   
 );
