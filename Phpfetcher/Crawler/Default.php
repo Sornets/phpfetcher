@@ -235,7 +235,7 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
             while (!empty($arrJobs[$arrIndice[0]])//如果$arrJobs[0]不为空//用$arrIndice有意思吗?
                 && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) //深度不溢出
                 && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {//页码不溢出
-
+				echo "CURRENT DEPTH : $intDepth." . PHP_EOL;
                 $intDepth += 1;
                 $intPopIndex = $arrIndice[0];//==0, pop
                 $intPushIndex = $arrIndice[1];//==1, push
