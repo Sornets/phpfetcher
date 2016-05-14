@@ -35,8 +35,19 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$str_cmt_id_patten = "#cmt_id\s?=\s?\d*;#";
 			$match_count = preg_match( $str_cmt_id_patten, $str_html, $matches );
 			if( $match_count == 0 ){
-				$cmt_id = 0;
-				$int_comment = -1;
+				//aid: "1400425094",
+				$str_aid_patten = "#aid:\s?\"\s?\d*\",#";
+				$match_count = preg_match( $str_aid_patten, $str_html, $matches );
+				if( $match_count == 0 ){
+					echo $page->getUrl() . PHP_EOL;
+					return;
+				}
+				else{
+					$matches[0] = str_replace( "aid: \"", "", $matches[0] );
+					$matches[0] = str_replace( "\",", "", $matches[0] );
+					$cmt_id = intval( $matches[0] );
+					$error_count = 0;
+				}
 			}
 			else{
 				$matches[0] = str_replace( "cmt_id = ", "", $matches[0] );
@@ -166,6 +177,10 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 
 				$int_comment = $arr_json['data']['total'];
 			}
+			else{
+				echo "cmt_id or aid error" . PHP_EOL;
+				return;
+			}
 			
 			//检查数据库中是否已经存在当前新闻
 			$str_has_sql = "SELECT id FROM `news` WHERE title='$str_title'";
@@ -205,8 +220,8 @@ class mycrawler extends Phpfetcher_Crawler_Default {
             $str_refer = mysql_real_escape_string( $str_refer );
             $str_refer_url = mysql_real_escape_string( $str_refer_url );
             $str_type = mysql_real_escape_string( $str_type );
-
-			$sql = "INSERT INTO `news` (`title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
+			$news_url = mysql_real_escape_string( $page->getUrl() );
+			$sql = "INSERT INTO `news` ( `real_id`, `news_url`, `title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$cmt_id', '$news_url', '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', $time )";
 			//echo 'sql:'. PHP_EOL . $sql .PHP_EOL . 'sql end';
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
 				$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
