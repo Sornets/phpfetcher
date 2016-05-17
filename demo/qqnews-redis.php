@@ -51,6 +51,7 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 			if( empty( $match_count ) ){//aid 获取失败
 				$need_log = true;
 				$error_type .= "Match cmt_id & aid failed.";
+				$cmt_id = 0;
 			}
 			else{//aid 获取成功
 				$matches[0] = str_replace( "aid: \"", "", $matches[0] );
@@ -64,9 +65,9 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 			$cmt_id = intval( $matches[0] );
 		}
 
-		if( $cmt_id ){
+		if( $cmt_id > 0 ){
 			//将cmt_id保存到redis中
-			$this->_redis->rpush( 'need:crawled:news:ids', $cmt_id );
+			$this->_redis->sadd( 'need:crawled:news:ids', $cmt_id );
 		}
 		else{
 			$need_log = true;
@@ -91,8 +92,8 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		}
 		@$str_refer = $obj_refer->plaintext;
 		//获取来源域名
-		@$arr_url = parse_url( $obj_refer->href );
-		$str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
+		$arr_url = parse_url( @$obj_refer->href );
+		$str_refer_url = @$arr_url['scheme'] . "://" . @$arr_url['host'];
 
 		//获取发布时间
 		$time = $page->sel('//span[@class=article-time]', 0)->plaintext;
@@ -116,7 +117,7 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		$db_pre = $GLOBALS['db']->_pre;
 		echo "now try to save news." . PHP_EOL;
 		$sql = "INSERT INTO `news` ( `real_id`, `news_url`, `title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$cmt_id', '$news_url', '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', '$time' )";
-		
+		//echo $sql . PHP_EOL;
 		if( !$GLOBALS['db']->exe_sql( $sql ) ){
 			//检查数据库中是否已经存在当前新闻
 			$str_has_sql = "SELECT id FROM `news` WHERE real_id='$cmt_id'";
@@ -147,7 +148,7 @@ $arrJobs = array(
     //the key is the name of a job, here names it qqnews
     'qqnews' => array( 
         //'start_page' => 'http://news.qq.com/', //起始网页
-        'start_page' => 'http://news.qq.com/a/20160421/053219.htm', 
+        'start_page' => 'http://news.qq.com/', 
         'link_rules' => array(
             /*
              * 所有在这里列出的正则规则，只要能匹配到超链接，那么那条爬虫就会爬到那条超链接
@@ -156,7 +157,7 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
 	//'max_depth' => 100,
-	'max_pages' => 1, 
+	'max_pages' => 10, 
     ) ,   
 );
 

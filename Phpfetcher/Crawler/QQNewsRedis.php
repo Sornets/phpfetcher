@@ -236,12 +236,12 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
             $this->_redis->sadd( 'need:crawl:links', $job_rules['start_page'] );
 
             //当 need:crawl:links 列表中有数据的时候，进行循环
-            while ( isset( $url = $this->_redis->spop( 'need:crawl:links' ) )
+            while ( $this->_redis->scard( 'need:crawl:links' ) > 0 
                 && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) //深度不溢出
                 && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {//页码不溢出
 
                 //从 need:crawl:links 中取一条数据
-                //$url = $this->_redis->lpop( 'need:crawl:links' );
+                $url = $this->_redis->spop( 'need:crawl:links' );
 
                 //两个条件都不符合
                 if ( $job_rules['max_pages'] !== -1 && $intPageNum > $job_rules['max_pages'] ) {
