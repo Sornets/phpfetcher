@@ -38,7 +38,7 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$str_html = $page->getContent();
 			$str_cmt_id_patten = "#cmt_id\s?=\s?\d*;#";
 			$match_count = preg_match( $str_cmt_id_patten, $str_html, $matches );
-			if( empty( $match_count ) ){//cmt_id获取失败
+			if( empty( $match_count ) ){//cmt_id 获取失败
 				//aid: "1400425094",
 				$str_aid_patten = "#aid:\s?\"\s?\d*\",#";
 				$match_count = preg_match( $str_aid_patten, $str_html, $matches );
@@ -67,7 +67,6 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 				$need_log = true;
 				$error_type .= "Get news id failed.";
 				$error_sql = "INSERT INTO `fail`( `err_type`, `content`) VALUES ( '$error_type', " . $news_url . "')";
-				$error_sql = mysql_real_escape_string($error_sql);
 				$GLOBALS['db']->exe_sql( $error_sql );
 			}
 
@@ -112,24 +111,24 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 			$db_pre = $GLOBALS['db']->_pre;
 
 			$sql = "INSERT INTO `news` ( `real_id`, `news_url`, `title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$cmt_id', '$news_url', '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', '$time' )";
-			$sql = mysql_real_escape_string($sql);
 			
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
 				//检查数据库中是否已经存在当前新闻
 				$str_has_sql = "SELECT id FROM `news` WHERE id='$str_title'";
-				$str_has_sql = mysql_real_escape_string($str_has_sql);
 				$has_this_news_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
 				$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
 				
-				//print_r( $has_this_user );
 				if( $has_this_news ){
-					//echo "id $user[userid] continued." . PHP_EOL;
 					return;
+				}
+				else{
+					$need_log = true;
+					$error_type .= "Insert failed.";
 				}
 			}
 
 			if( $need_log ){
-				$error_sql = "INSERT INTO `fail`( `err_type`, `content`) VALUES ( '$error_type', " . mysql_real_escape_string($sql) . "')";
+				$error_sql = "INSERT INTO `fail`( `err_type`, `content`) VALUES ( '$error_type', '$sql')";
 				$GLOBALS['db']->exe_sql( $error_sql );
 			}
 			
@@ -147,12 +146,10 @@ $arrJobs = array(
         'link_rules' => array(
             /*
              * 所有在这里列出的正则规则，只要能匹配到超链接，那么那条爬虫就会爬到那条超链接
-             * Regex rules are listed here, the crawler will follow any hyperlinks once the regex matches
              */
             '#news\.qq\.com/a/\d+/\d+\.htm$#',
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
-        //Crawler's max following depth, 1 stands for only crawl the start page
 	//'max_depth' => 100,
 	//'max_pages' => 3, 
     ) ,   

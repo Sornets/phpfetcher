@@ -38,6 +38,7 @@ class Phpfetcher_MySQL_Default{
 	}
 
 	public function exe_sql( $str ){
+		$str = mysql_real_escape_string( $str );
 		return mysql_query( $str, $this->_con );
 	} 
 }
