@@ -71,8 +71,6 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		else{
 			$need_log = true;
 			$error_type .= "Get news id failed.";
-			$error_sql = "INSERT INTO `fail`( `err_type`, `content`) VALUES ( '$error_type', " . $news_url . "')";
-			$GLOBALS['db']->exe_sql( $error_sql );
 		}
 
 		//获取新闻类型
@@ -111,10 +109,23 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		}
 
 		$time = strtotime( $time );
-					//保存信息
+		//保存信息
 		$db_name = $GLOBALS['db']->_db_name;
 		$db_pre = $GLOBALS['db']->_pre;
 		echo "now try to save news." . PHP_EOL;
+
+		$cmt_id = mysql_real_escape_string( $cmt_id );
+		$news_url = mysql_real_escape_string( $news_url );
+		$str_title = mysql_real_escape_string( $str_title );
+		$int_comment = mysql_real_escape_string( $int_comment );
+		$str_content = mysql_real_escape_string( $str_content );
+		$str_refer = mysql_real_escape_string( $str_refer );
+		$str_refer_url = mysql_real_escape_string( $str_refer_url );
+		$str_type = mysql_real_escape_string( $str_type );
+		$time = mysql_real_escape_string( $time );
+		
+
+
 		$sql = "INSERT INTO `news` ( `real_id`, `news_url`, `title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$cmt_id', '$news_url', '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', '$time' )";
 		
 		if( !$GLOBALS['db']->exe_sql( $sql ) ){
@@ -122,10 +133,9 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 			$str_has_sql = "SELECT id FROM `news` WHERE real_id='$cmt_id'";
 			$has_this_news_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
 			if( isset( $has_this_news_handle ) && $has_this_news_handle !== false ){
-				//var_dump( $has_this_news_handle);
 				$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
 			}
-			if( isset( $has_this_news ) ){
+			if( $has_this_news ){
 				return;
 			}
 			else{
@@ -135,6 +145,10 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		}
 
 		if( $need_log ){
+			
+			$error_type = mysql_real_escape_string( $error_type );
+			$news_url = mysql_real_escape_string( $news_url );
+
 			$error_sql = "INSERT INTO `fail`( `err_type`, `content`) VALUES ( '$error_type', '$sql')";
 			$GLOBALS['db']->exe_sql( $error_sql );
 		}
