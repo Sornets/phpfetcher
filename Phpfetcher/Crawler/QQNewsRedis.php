@@ -234,14 +234,14 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
             $intDepth   = 0;//深度
             $intPageNum = 0;//爬取的页面数量
             $this->_redis->rpush( 'need:crawl:links', $job_rules['start_page'] );
-
             //当 need:crawl:links 列表中有数据的时候，进行循环
-            while ( !empty( $this->_redis->llen( 'need:crawl:links' ) )
-                && ($job_rules['max_depth'] === -1 || $intDepth < $job_rules['max_depth']) //深度不溢出
-                && ($job_rules['max_pages'] === -1 || $intPageNum < $job_rules['max_pages'])) {//页码不溢出
+            while ( $this->_redis->llen( 'need:crawl:links') > 0
+                &&  $intDepth < $job_rules['max_depth'] //深度不溢出
+                &&  $intPageNum < $job_rules['max_pages'] ) {//页码不溢出
 
                 //从 need:crawl:links 中取一条数据
-                $url = $this->_redis->lpop( 'need:crawl:links' );
+                echo "next line is lpop";
+		$url = $this->_redis->lpop( 'need:crawl:links' );
                 //两个条件都不符合
                 if ( $job_rules['max_pages'] !== -1 && $intPageNum > $job_rules['max_pages'] ) {
                     //如果页数超标，结束
@@ -252,7 +252,9 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
 
                 //获取所有的超链接
                 $arrLinks  = $objPage->getHyperLinks();
-
+		if( empty( $arrLinks ) ){
+			continue;
+		}
                 //解析当前URL的各个组成部分，以应对超链接中存在站内链接
                 //的情况，如"/entry"等形式的URL
                 $strCurUrl = $objPage->getUrl();
@@ -299,8 +301,8 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
                                             $link : "/$link");
                             }
 
-                            $this->saveUrl( 'crawled:links', $link );//记录相对地址的hash值
-                            $this->saveUrl( 'crawled:links', $real_link );//记录协议地址的hash值
+                            //$this->saveUrl( 'crawled:links', $link );//记录相对地址的hash值
+                            //$this->saveUrl( 'crawled:links', $real_link );//记录协议地址的hash值
                             //$arrJobs[$intPushIndex][] = $real_link;//保存待爬取的url//将地址加到arrJobs[$intPushIndex]里
                             $this->_redis->rpush( 'need:crawl:links', $real_link );
                         }
@@ -310,7 +312,8 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
                 //由用户实现handlePage函数
                 $objPage->setExtraInfo(array('job_name' => $job_name ));
                 $this->handlePage($objPage);
-                $intPageNum += 1;
+                $this->saveUrl( 'crawled:links', $objPage->getUrl() );
+		$intPageNum += 1;
                 //} 
             }
         }
