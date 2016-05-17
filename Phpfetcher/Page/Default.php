@@ -113,6 +113,10 @@ class Phpfetcher_Page_Default extends Phpfetcher_Page_Abstract {
     }
 
     public function getHyperLinks() {
+        if ($this->_dom === NULL) {
+            Phpfetcher_Log::warning('$this->_dom is NULL!');
+            return NULL;
+        }
         $arrLinks = array();
         $res = $this->sel('//a');
         for ($i = 0; $i < count($res); ++$i) {

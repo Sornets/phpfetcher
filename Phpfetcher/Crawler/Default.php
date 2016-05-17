@@ -299,8 +299,8 @@ abstract class Phpfetcher_Crawler_Default extends Phpfetcher_Crawler_Abstract {
                                                 $link : "/$link");
                                 }
 
-                                $this->setHash($link, true);//记录相对地址的hash值
-                                $this->setHash($real_link, true);//记录协议地址的hash值
+                                $this->setHash($link, true);//将相对地址的hash值保存到爬取历史数组中
+                                $this->setHash($real_link, true);//将协议地址的hash值保存到爬取历史数组中
                                 $arrJobs[$intPushIndex][] = $real_link;//保存待爬取的url//将地址加到arrJobs[$intPushIndex]里
                             }
                         }
