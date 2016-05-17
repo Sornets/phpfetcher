@@ -17,16 +17,23 @@ $config = array(
 
 $db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
-class mycrawler extends Phpfetcher_Crawler_Default {
+class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
     public function handlePage($page) {
-    	$need_log = false;
+    	echo "crawling : " . $page->getUrl() . PHP_EOL;
+	//var_dump( $page->_dom );
+	//if( empty( $page->_dom ) ){
+	//	return;
+	//}		
+	$need_log = false;
     	$error_type = "";
-
+	$int_comment = 0;
     	$news_url = $page->getUrl();
-        //获取标题
-        $str_title = $page->sel('//h1', 0)->plaintext;
-		//获取文章内容
-        $arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]/p');
+        //echo $news_url . PHP_EOL;
+	//获取标题
+        $str_title = $page->sel('//title', 0)->plaintext;
+	//获取文章内容
+        echo "title : " . $str_title . PHP_EOL;
+	$arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]/p');
         if( $arr_content ){
 			$str_content = '';//*
         	foreach( $arr_content as $content ){
@@ -84,9 +91,9 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 					$error_type .= "Get refer info failed.";
 				}
 			}
-			$str_refer = $obj_refer->plaintext;
+			@$str_refer = $obj_refer->plaintext;
 			//获取来源域名
-			$arr_url = parse_url( $obj_refer->href );
+			@$arr_url = parse_url( $obj_refer->href );
 			$str_refer_url = $arr_url['scheme'] . "://" . $arr_url['host'];
 
 			//获取发布时间
@@ -109,16 +116,18 @@ class mycrawler extends Phpfetcher_Crawler_Default {
 						//保存信息
 			$db_name = $GLOBALS['db']->_db_name;
 			$db_pre = $GLOBALS['db']->_pre;
-
+			echo "now try to save news." . PHP_EOL;
 			$sql = "INSERT INTO `news` ( `real_id`, `news_url`, `title`, `comment_num`, `content`, `refer`, `refer_url`, `news_type`, `time` ) VALUES ( '$cmt_id', '$news_url', '$str_title', '$int_comment', '$str_content', '$str_refer', '$str_refer_url', '$str_type', '$time' )";
 			
 			if( !$GLOBALS['db']->exe_sql( $sql ) ){
 				//检查数据库中是否已经存在当前新闻
-				$str_has_sql = "SELECT id FROM `news` WHERE id='$str_title'";
+				$str_has_sql = "SELECT id FROM `news` WHERE real_id='$cmt_id'";
 				$has_this_news_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
-				$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
-				
-				if( $has_this_news ){
+				if( isset( $has_this_news_handle ) && $has_this_news_handle !== false ){
+					//var_dump( $has_this_news_handle);
+					$has_this_news = mysql_fetch_assoc( $has_this_news_handle );
+				}
+				if( isset( $has_this_news ) ){
 					return;
 				}
 				else{
@@ -151,7 +160,7 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
 	//'max_depth' => 100,
-	//'max_pages' => 3, 
+	//'max_pages' => 50, 
     ) ,   
 );
 
