@@ -253,9 +253,9 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
 
                 //获取所有的超链接
                 $arrLinks  = $objPage->getHyperLinks();
-		if( empty( $arrLinks ) ){
-			continue;
-		}
+        		if( empty( $arrLinks ) ){
+        			continue;
+        		}
                 //解析当前URL的各个组成部分，以应对超链接中存在站内链接
                 //的情况，如"/entry"等形式的URL
                 $strCurUrl = $objPage->getUrl();
@@ -297,7 +297,7 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
                                             $link : "/$link");
                             }
                             //判断 crawled:links 集合中是否已有
-                            if( empty( $this->_redis->sismember( 'crawled:links', $real_link ) ) ){
+                            if( self::isGoodUrl( $real_link ) && empty( $this->_redis->sismember( 'crawled:links', $real_link ) ) ){
                                 //没有
                                 $this->_redis->sadd( 'need:crawl:links', $real_link );
                             }
@@ -398,6 +398,24 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
         }
 
         return $intAddedNum;
+    }
+
+    public static function isGoodUrl( $url ){
+        $date = self::getDateFromUrl( $url );
+        if( $date >= 20150101 ){
+            return true;
+        }
+        return false;
+    }
+
+    public static function getDateFromUrl( $url ){
+        $pattern = "#/a/\d+/#";
+        $matchs = array();
+        preg_match( $pattern, $url, $matchs );
+        if( isset( $matchs[0] ) ){
+            return $news_data = intval( substr( $matchs, 3, -1 ) );
+        }
+        return false;
     }
 };
 ?>
