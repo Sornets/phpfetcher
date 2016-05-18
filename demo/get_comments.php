@@ -20,9 +20,17 @@ $db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 $redis = new Redis();
 $redis->connect( '127.0.0.1', 6379 );
+$min_date = 20120101;
 
-//不断从 need:crawled:news:ids 列表中取id
-while( $cmt_id = $redis->blpop( 'need:crawled:news:ids' ) ){
+//不断从 need:crawled:news:ids 列表中取新闻id
+while( $cmt_id = $redis->spop( 'need:crawled:news:ids' ) ){
+	$news_url = $redis->hget( 'news:id:links', $cmt_id );
+	$news_data = getDateFromUrl( $news_url );
+
+	if( !could_crawl( $news_url) ){
+		//进行下篇文章
+		continue;
+	}
 	$next_cmt_id = 0;
 	$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
 	//循环获取json评论
@@ -39,50 +47,78 @@ while( $cmt_id = $redis->blpop( 'need:crawled:news:ids' ) ){
 		$arr_json = json_decode($str_json, TRUE);
 		mysql_real_escape_arr( $arr_json );
 		if( $arr_json && $arr_json['errCode'] == 0 ){
-			
+			$error_count = 0;
+
 			$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
 			$get_time = $arr_json['info']['time'];
-			$error_count = 0;
 			foreach( $arr_json['data']['commentid'] as $comment ){
 				//判断当前评论时候保存过
-				//$update_time = $redis->hget( 'crawled:comments', $cmt_id );
 				$user = $comment['userinfo'];
 				$weibo = $comment['userinfo']['wbuserinfo'];
 				
-				if( !isCmtNeedInsert( $comment ) ){
-					continue;
+				//暂时先不考虑两次爬取间隔太短的情况
+				if( !isCmtExist( $comment['id'] ) ){
+					$res = insertCmtInfo( $comment );
+					if( $res ){//插入数据成功
+						$redis->hset( 'crawled:comments', $comment['id'], time() );
+					}
 				}
-				//insert cmt
-				$res = insertCmtInfo( $comment );
-				if( !$res ){
-					$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
-					$GLOBALS['db']->exe_sql( $error_sql );
-					echo $str_comment_sql;
-				}
-				
-				
-				$str_has_sql = "SELECT `userid` FROM `users` WHERE userid=$user[userid]";
-				$has_this_user_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
-				$has_this_user = mysql_fetch_assoc( $has_this_user_handle );
-				if( $has_this_user ){
-					continue;
-				}
-				
-				//$str_user_sql = mysql_real_escape_string( $str_user_sql );
-				$res = $GLOBALS['db']->exe_sql( $str_user_sql);
-				if( !$res ){
-					echo $str_user_sql;
+				//已存在评论，跳过对当前评论的操作
+
+				if( !isUserExist( $user['id'] ) ){
+					$res = insertUserInfo( $user );
+					if( $res ){//插入数据成功
+						$redis->hset( 'crawled:users', $user['userid'], time() );
+					}
 				}
 			}
 		}
 		else{
 			$error_count++;
-			if( $error_count > 10 ){
-				break;
+			if( $error_count > 2 ){
+				$news_data = getDateFromUrl( $news_url );
+				$redis->sadd( 'can:notuse:news:dates', $news_data );
+				if( $news_data > $min_date ){
+					$min_date = $news_data + 1;
+				}
+				break;//break do while()//获取下篇新闻的评论
 			}
 			continue;
 		}
 	}while( $arr_json['data']['hasnext'] );
+
+	//将爬取过评论的文章id保存在 crawled:news:ids   哈希表中，field 为 id，value 为 timestamp
+	$redis->hset( 'crawled:news:ids', $cmt_id ,time() );
+	//将爬取过的新闻date加入的redis can:use:news:dates 中
+	if( $news_data < $min_date ){
+		$redis->sadd( 'can:use:news:dates', $news_data );
+		$min_date = $news_date;
+	}
+
+}
+
+function isCmtExist( $comment_id ){
+	return $redis->hexists( 'crawled:comments', $comment_id );
+}
+
+function isUserExist( $user_id ){
+	return $redis->hexists( 'crawled:users', $user_id );
+}
+function getDateFromUrl( $url ){
+	$pattern = "#/a/\d+/#";
+	$matchs = array();
+	preg_match( $pattern, $url, $matchs );
+	if( isset( $matchs[0] ) ){
+		return $news_data = intval( substr( $matchs, 3, -1 ) );
+	}
+	return false;
+}
+
+function could_crawl( $news_url ){
+	if( $date = getDateFromUrl( $news_url ) ){
+		return $date >= $GLOBALS['min_date'];
+	}
+	return false;
 }
 
 function isCmtNeedInsert( $update_time){
@@ -140,7 +176,8 @@ function insertCmtInfo( $comment ){
 
 function updateUserInfo(){}
 
-function insertUserInfo(){
+function insertUserInfo( $user ){
+	$weibo = $user['wbuserinfo'];
 	@$str_user_sql = "INSERT INTO `users`(
 		`userid`, `uidex`, `nick`, `head`, 
 		`gender`, `viptype`, `mediaid`, `region`, 
@@ -164,3 +201,27 @@ function insertUserInfo(){
 	)";
 
 }
+
+//$redis->hset( 'crawled:comments', $comment['id'], time() );
+//insert cmt
+/*$res = insertCmtInfo( $comment );
+if( !$res ){
+	$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
+	$GLOBALS['db']->exe_sql( $error_sql );
+	echo $str_comment_sql;
+}*/
+
+//$redis->hset( 'crawled:users', $user['userid'], time() );
+
+/*$str_has_sql = "SELECT `userid` FROM `users` WHERE userid=$user[userid]";
+$has_this_user_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
+$has_this_user = mysql_fetch_assoc( $has_this_user_handle );
+if( $has_this_user ){
+	continue;
+}*/
+
+//$str_user_sql = mysql_real_escape_string( $str_user_sql );
+/*$res = $GLOBALS['db']->exe_sql( $str_user_sql);
+if( !$res ){
+	echo $str_user_sql;
+}*/
