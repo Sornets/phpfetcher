@@ -19,7 +19,7 @@ $db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
     public function handlePage($page) {
-    	echo "crawling : " . $page->getUrl() . PHP_EOL;
+    	//echo "crawling : " . $page->getUrl() . PHP_EOL;
 		
 		$need_log = false;
     	$error_type = "";
@@ -30,7 +30,7 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		//获取标题
         $str_title = $page->sel('//title', 0)->plaintext;
 		//获取文章内容
-        echo "title : " . $str_title . PHP_EOL;
+        //echo "title : " . $str_title . PHP_EOL;
 		$arr_content = $page->sel('div[@id=Cnt-Main-Article-QQ]/p');
         //if( $arr_content ){
 		$str_content = '';//*
@@ -94,10 +94,10 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		$str_refer_url = @$arr_url['scheme'] . "://" . @$arr_url['host'];
 
 		//获取发布时间
-		$time = $page->sel('//span[@class=article-time]', 0)->plaintext;
+		$time = @$page->sel('//span[@class=article-time]', 0)->plaintext;
 		if( empty( $time ) ){
 			//for http://news.qq.com/a/20120425/000744.htm
-			$time = $page->sel('//span[@class=pubTime]', 0)->plaintext;
+			$time = @$page->sel('//span[@class=pubTime]', 0)->plaintext;
 			if( !empty( $time ) ){
 				$time = str_replace( '年', '-', $time );
 				$time = str_replace( '月', '-', $time );
@@ -113,7 +113,7 @@ class mycrawler extends Phpfetcher_Crawler_QQNewsRedis{
 		//保存信息
 		$db_name = $GLOBALS['db']->_db_name;
 		$db_pre = $GLOBALS['db']->_pre;
-		echo "now try to save news." . PHP_EOL;
+		//echo "now try to save news." . PHP_EOL;
 
 		$cmt_id = mysql_real_escape_string( $cmt_id );
 		$news_url = mysql_real_escape_string( $news_url );
@@ -171,7 +171,7 @@ $arrJobs = array(
         ),
         //爬虫从开始页面算起，最多爬取的深度，设置为1表示只爬取起始页面
 	//'max_depth' => 100,
-	'max_pages' => 10, 
+	//'max_pages' => 3, 
     ) ,   
 );
 
