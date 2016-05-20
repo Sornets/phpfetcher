@@ -13,9 +13,9 @@ $sql = "SELECT `real_id` FROM `news`";
 $id_source = mysql_query( $sql, $mysql_con );
 $count = 0;
 while( $id = mysql_fetch_assoc( $id_source ) ){
-	$count++;
-	if( $count == 100 )
-		break;
+	if( empty( $id['real_id'] ) ){
+		continue;
+	}
 	$redis->sadd( 'news:id:needCrawlComment', $id['real_id'] );
 }
 

@@ -7,7 +7,7 @@ require_once('phpfetcher.php');
 require_once('lib.php');
 define( CMT_TABLE, "comments_");
 define( USER_TABLE, "users_");
-define( TABLE_LIMIT, 100 );
+define( TABLE_LIMIT, 1000000 - 1 );
 
 //mysql info
 $config = array(
@@ -28,7 +28,9 @@ $error_count = 0;
 
 while( $redis->scard( 'news:id:needCrawlComment' ) ){
 	$cmt_id = $redis->spop( 'news:id:needCrawlComment' );
-	
+	if( empty( $cmt_id ) ){
+		continue;
+	}	
 	$next_cmt_id = 0;
 	$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
 	//循环获取json评论
@@ -72,7 +74,7 @@ while( $redis->scard( 'news:id:needCrawlComment' ) ){
 		else{
 			$error_count++;
 			if( $error_count > 3 ){
-				insertErorr( 'errCode != 0', "cmt_id = $cmt_id" );
+				insertError( 'errCode != 0', "cmt_id = $cmt_id" );
 				break;//break do while()//获取下篇新闻的评论
 			}
 			continue;
@@ -185,7 +187,7 @@ function getTableName( $table_pre, $id ){
 	return $table_pre . $table_index;
 }
 
-function insertErorr( $err_content, $err_type ){
+function insertError( $err_content, $err_type ){
 	$err_content = mysql_real_escape_string( $err_content );
 	$err_sql = "INSERT INTO `fail`(`err_type`, `content`) VALUES ('$err_type', '$err_content')";
 }
