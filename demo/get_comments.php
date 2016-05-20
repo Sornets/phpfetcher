@@ -11,7 +11,7 @@ $config = array(
     'db_host'       => 'localhost',
     'db_port'       => '3306',
     'db_username'   => 'root',
-    'db_password'   => 'sxcxs0819',
+    'db_password'   => 'root',
     'db_name'       => 'qqnews',//库名
     'db_pre'        => '',//前缀
 );
@@ -20,13 +20,14 @@ $db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 $redis = new Redis();
 $redis->connect( '127.0.0.1', 6379 );
-$min_date = 20120101;
-
+$min_date = 20150101;
+$error_count = 0;
 //不断从 need:crawled:news:ids 列表中取新闻id
-while( $cmt_id = $redis->spop( 'need:crawled:news:ids' ) ){
+var_dump( $redis->scard( 'need:crawled:news:ids' ) );
+while( $redis->scard( 'need:crawled:news:ids' ) ){
+	$cmt_id = $redis->spop( 'need:crawled:news:ids' );
 	$news_url = $redis->hget( 'news:id:links', $cmt_id );
 	$news_data = getDateFromUrl( $news_url );
-
 	if( !could_crawl( $news_url) ){
 		//进行下篇文章
 		continue;
@@ -65,7 +66,7 @@ while( $cmt_id = $redis->spop( 'need:crawled:news:ids' ) ){
 				}
 				//已存在评论，跳过对当前评论的操作
 
-				if( !isUserExist( $user['id'] ) ){
+				if( !isUserExist( $user['userid'] ) ){
 					$res = insertUserInfo( $user );
 					if( $res ){//插入数据成功
 						$redis->hset( 'crawled:users', $user['userid'], time() );
@@ -90,26 +91,26 @@ while( $cmt_id = $redis->spop( 'need:crawled:news:ids' ) ){
 	//将爬取过评论的文章id保存在 crawled:news:ids   哈希表中，field 为 id，value 为 timestamp
 	$redis->hset( 'crawled:news:ids', $cmt_id ,time() );
 	//将爬取过的新闻date加入的redis can:use:news:dates 中
-	if( $news_data < $min_date ){
+	/*if( $news_data < $min_date ){
 		$redis->sadd( 'can:use:news:dates', $news_data );
 		$min_date = $news_date;
-	}
+	}*/
 
 }
 
 function isCmtExist( $comment_id ){
-	return $redis->hexists( 'crawled:comments', $comment_id );
+	return $GLOBALS['redis']->hexists( 'crawled:comments', $comment_id );
 }
 
 function isUserExist( $user_id ){
-	return $redis->hexists( 'crawled:users', $user_id );
+	return $GLOBALS['redis']->hexists( 'crawled:users', $user_id );
 }
 function getDateFromUrl( $url ){
 	$pattern = "#/a/\d+/#";
 	$matchs = array();
 	preg_match( $pattern, $url, $matchs );
 	if( isset( $matchs[0] ) ){
-		return $news_data = intval( substr( $matchs, 3, -1 ) );
+		return $news_data = intval( substr( $matchs[0], 3, -1 ) );
 	}
 	return false;
 }
