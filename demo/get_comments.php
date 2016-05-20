@@ -5,6 +5,9 @@ set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
 
 require_once('phpfetcher.php');
 require_once('lib.php');
+define( CMT_TABLE, "comments_");
+define( USER_TABLE, "users_");
+define( TABLE_LIMIT, 100 );
 
 //mysql info
 $config = array(
@@ -20,18 +23,12 @@ $db = new Phpfetcher_MySQL_Default( $config );
 $curl = curl_init();
 $redis = new Redis();
 $redis->connect( '127.0.0.1', 6379 );
-$min_date = 20150101;
 $error_count = 0;
-//不断从 need:crawled:news:ids 列表中取新闻id
-var_dump( $redis->scard( 'need:crawled:news:ids' ) );
-while( $redis->scard( 'need:crawled:news:ids' ) ){
-	$cmt_id = $redis->spop( 'need:crawled:news:ids' );
-	$news_url = $redis->hget( 'news:id:links', $cmt_id );
-	$news_data = getDateFromUrl( $news_url );
-	if( !could_crawl( $news_url) ){
-		//进行下篇文章
-		continue;
-	}
+//不断从 news:id:needCrawlComment ZSET中取新闻id
+
+while( $redis->scard( 'news:id:needCrawlComment' ) ){
+	$cmt_id = $redis->spop( 'news:id:needCrawlComment' );
+	
 	$next_cmt_id = 0;
 	$comment_url = "http://coral.qq.com/article/$cmt_id/comment";
 	//循环获取json评论
@@ -53,98 +50,61 @@ while( $redis->scard( 'need:crawled:news:ids' ) ){
 			$next_cmt_id = $arr_json['data']['last'];//获取成功即修改下一次的参数
 			$get_time = $arr_json['info']['time'];
 			foreach( $arr_json['data']['commentid'] as $comment ){
-				//判断当前评论时候保存过
+				//判断当前评论是否保存过
 				$user = $comment['userinfo'];
 				$weibo = $comment['userinfo']['wbuserinfo'];
 				
-				//暂时先不考虑两次爬取间隔太短的情况
 				if( !isCmtExist( $comment['id'] ) ){
 					$res = insertCmtInfo( $comment );
 					if( $res ){//插入数据成功
-						$redis->hset( 'crawled:comments', $comment['id'], time() );
+						$redis->ZADD( 'comment:id:crawled', time(), $comment['id'] );
 					}
 				}
-				//已存在评论，跳过对当前评论的操作
 
 				if( !isUserExist( $user['userid'] ) ){
 					$res = insertUserInfo( $user );
 					if( $res ){//插入数据成功
-						$redis->hset( 'crawled:users', $user['userid'], time() );
+						$redis->ZADD( 'user:id:crawled', time(), $user['userid'] );
 					}
 				}
 			}
 		}
 		else{
 			$error_count++;
-			if( $error_count > 2 ){
-				$news_data = getDateFromUrl( $news_url );
-				$redis->sadd( 'can:notuse:news:dates', $news_data );
-				if( $news_data > $min_date ){
-					$min_date = $news_data + 1;
-				}
+			if( $error_count > 3 ){
+				insertErorr( 'errCode != 0', "cmt_id = $cmt_id" );
 				break;//break do while()//获取下篇新闻的评论
 			}
 			continue;
 		}
 	}while( $arr_json['data']['hasnext'] );
+	//一条新闻爬取完成
+	$redis->ZADD( 'news:id:crawledComment', time(), $cmt_id );
 
-	//将爬取过评论的文章id保存在 crawled:news:ids   哈希表中，field 为 id，value 为 timestamp
-	$redis->hset( 'crawled:news:ids', $cmt_id ,time() );
-	//将爬取过的新闻date加入的redis can:use:news:dates 中
-	/*if( $news_data < $min_date ){
-		$redis->sadd( 'can:use:news:dates', $news_data );
-		$min_date = $news_date;
-	}*/
-
-}
+}//while( $redis->scard( 'news:id:needCrawlComment' ) ){
 
 function isCmtExist( $comment_id ){
-	return $GLOBALS['redis']->hexists( 'crawled:comments', $comment_id );
+	$res = $GLOBALS['redis']->ZSCORE( 'comment:id:crawled', $comment_id );
+	return boolval( $res );
 }
 
 function isUserExist( $user_id ){
-	return $GLOBALS['redis']->hexists( 'crawled:users', $user_id );
-}
-function getDateFromUrl( $url ){
-	$pattern = "#/a/\d+/#";
-	$matchs = array();
-	preg_match( $pattern, $url, $matchs );
-	if( isset( $matchs[0] ) ){
-		return $news_data = intval( substr( $matchs[0], 3, -1 ) );
-	}
-	return false;
+	$res = $GLOBALS['redis']->ZSCORE( 'user:id:crawled', $user_id );
+	return boolval( $res );
 }
 
-function could_crawl( $news_url ){
-	if( $date = getDateFromUrl( $news_url ) ){
-		return $date >= $GLOBALS['min_date'];
-	}
-	return false;
-}
-
-function isCmtNeedInsert( $update_time){
-	if( empty( $update_time ) ){
-		return true;
-	}
-	else{
-		return false;
-	}
-}
-
-function isCmtNeedUpdate( $comment ){
-	$cmt_time = $comment['time'];
-	$cur_time = time();
-	if( $cur_time - $cmt_time < 3600 * 24 * 7 ){
-		//一周前的评论不更新
-		return false;
-	}
-}
-
-function updateCmtInfo(){}
-
+/*
+ * 将$comment插入到表中
+ * 1：将comment:totalNum自增，并获取结果
+ * 2：将1中获取的值作为评论的主键id，
+ * 3：根据主键id选择要插入的表名
+ * 4：插入到数据库中
+ */
 function insertCmtInfo( $comment ){
-	@$str_comment_sql = "INSERT INTO `comments`(
-		`id`, `rootid`, `targetid`, `parent`, 
+	$comment_id = $GLOBALS['redis']->INCR( 'comment:totalNum' );
+	$table_name = getTableName( CMT_TABLE, $comment_id );
+	@$str_comment_sql = "INSERT INTO `$table_name`(
+		`id`, `real_id`, `rootid`, `targetid`, `parent`, 
 		`timeDifference`, `time`, `content`, 
 		`title`, `up`, `rep`, `type`, 
 		`hotscale`, `checktype`, `checkstatus`, 
@@ -158,7 +118,7 @@ function insertCmtInfo( $comment ){
 		`replyhwannual`, 
 		`create_time`, `update_time`, `analysis_time`
 	) VALUES (
-		'$comment[id]', '$comment[rootid]', '$comment[targetid]', '$comment[parent]', 
+		'$comment_id', '$comment[id]', '$comment[rootid]', '$comment[targetid]', '$comment[parent]', 
 		'$comment[timeDifference]', '$comment[time]', '$comment[content]', 
 		'$comment[title]', '$comment[up]', '$comment[rep]', '$comment[type]', 
 		'$comment[hotscale]', '$comment[checktype]', '$comment[checkstatus]', 
@@ -172,15 +132,27 @@ function insertCmtInfo( $comment ){
 		'$comment[replyhwannual]', 
 		'$get_time', '$get_time', 0 
 	)";
-	return $GLOBALS['db']->exe_sql( $str_comment_sql );
+	$res = $GLOBALS['db']->exe_sql( $str_comment_sql );
+	$res = boolval( $res );
+	if( !$res ){
+		insertError( $str_comment_sql, 'comment_insert_fail' );
+	}
+	return $res; 
 }
 
-function updateUserInfo(){}
-
+/*
+ * 将$user插入到表中
+ * 1：将user:totalNum自增，并获取结果
+ * 2：将1中获取的值作为用户信息的主键id，
+ * 3：根据主键id选择要插入的表名
+ * 4：插入到数据库中
+ */
 function insertUserInfo( $user ){
 	$weibo = $user['wbuserinfo'];
-	@$str_user_sql = "INSERT INTO `users`(
-		`userid`, `uidex`, `nick`, `head`, 
+	$user_id = $GLOBALS['redis']->INCR( 'user:totalNum' );
+	$table_name = getTableName( USER_TABLE, $user_id );
+	@$str_user_sql = "INSERT INTO `$table_name`(
+		`id`, `userid`, `uidex`, `nick`, `head`, 
 		`gender`, `viptype`, `mediaid`, `region`, 
 		`thirdlogin`, `hwvip`, `hwlevel`, 
 		`hwannual`, `identity`, `wb_name`, 
@@ -190,7 +162,7 @@ function insertUserInfo( $user ){
 		`wb_live_city`, `wb_live_area`, 
 		`wb_gender`, `wb_level`, `wb_classify`
 	) VALUES (
-		'$user[userid]', '$user[uidex]', '$user[nick]', '$user[head]', 
+		'$user_id', '$user[userid]', '$user[uidex]', '$user[nick]', '$user[head]', 
 		'$user[gender]', '$user[viptype]', '$user[mediaid]', 
 		'$user[region]', '$user[thirdlogin]', '$user[hwvip]', 
 		'$user[hwlevel]', '$user[hwannual]', '$user[identity]', 
@@ -200,29 +172,20 @@ function insertUserInfo( $user ){
 		'{$weibo['liveaddr']['province']}', '{$weibo['liveaddr']['city']}', '{$weibo['liveaddr']['area']}', 
 		'$weibo[gender]', '$weibo[level]', '$weibo[classify]'
 	)";
-
+	$res = $GLOBALS['db']->exe_sql( $str_user_sql );
+	$res = boolval( $res );
+	if( !$res ){
+		insertError( $str_user_sql, 'user_insert_fail' );
+	}
+	return $res; 
 }
 
-//$redis->hset( 'crawled:comments', $comment['id'], time() );
-//insert cmt
-/*$res = insertCmtInfo( $comment );
-if( !$res ){
-	$error_sql = "INSERT INTO `fail`(`content`) VALUES ('" . mysql_real_escape_string($sql) . "')";
-	$GLOBALS['db']->exe_sql( $error_sql );
-	echo $str_comment_sql;
-}*/
+function getTableName( $table_pre, $id ){
+	$table_index = intval( $id / TABLE_LIMIT ) + 1;
+	return $table_pre . $table_index;
+}
 
-//$redis->hset( 'crawled:users', $user['userid'], time() );
-
-/*$str_has_sql = "SELECT `userid` FROM `users` WHERE userid=$user[userid]";
-$has_this_user_handle = $GLOBALS['db']->exe_sql( $str_has_sql );
-$has_this_user = mysql_fetch_assoc( $has_this_user_handle );
-if( $has_this_user ){
-	continue;
-}*/
-
-//$str_user_sql = mysql_real_escape_string( $str_user_sql );
-/*$res = $GLOBALS['db']->exe_sql( $str_user_sql);
-if( !$res ){
-	echo $str_user_sql;
-}*/
+function insertErorr( $err_content, $err_type ){
+	$err_content = mysql_real_escape_string( $err_content );
+	$err_sql = "INSERT INTO `fail`(`err_type`, `content`) VALUES ('$err_type', '$err_content')";
+}

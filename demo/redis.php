@@ -9,13 +9,16 @@ while( $url = mysql_fetch_assoc( $urls_source ) ){
 	$redis->sadd( 'crawled:links', $url['news_url'] );
 }
 */
-/*$sql = "SELECT `real_id` FROM `news`";
+$sql = "SELECT `real_id` FROM `news`";
 $id_source = mysql_query( $sql, $mysql_con );
+$count = 0;
 while( $id = mysql_fetch_assoc( $id_source ) ){
-	$redis->sadd( 'need:crawled:news:ids', $id['real_id'] );
-
+	$count++;
+	if( $count == 100 )
+		break;
+	$redis->sadd( 'news:id:needCrawlComment', $id['real_id'] );
 }
-*/
+
 /*
 $sql = "SELECT `id`, `update_time` FROM	`comments`";
 $source = mysql_query( $sql, $mysql_con );
@@ -35,7 +38,7 @@ $source = mysql_query( $sql, $mysql_con );
 while( $date = mysql_fetch_assoc( $source ) ){
 	$redis->hset( 'news:id:links', $date['real_id'], $date['news_url'] );
 }*/
-
+/*
 $sql = "SELECT `real_id`, `news_url` FROM `news`";
 $source = mysql_query( $sql, $mysql_con );
 while( $date = mysql_fetch_assoc( $source ) ){
@@ -58,3 +61,4 @@ function getDateFromUrl( $url ){
 	}
 	return false;
 }
+*/
