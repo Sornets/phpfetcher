@@ -402,7 +402,9 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
 
     public static function isGoodUrl( $url ){
         $date = self::getDateFromUrl( $url );
-        if( $date >= 20150101 ){
+        //echo $date . PHP_EOL;
+	if( $date >= 20150101 ){
+		//echo "TRUE";
             return true;
         }
         return false;
@@ -413,7 +415,7 @@ abstract class Phpfetcher_Crawler_QQNewsRedis extends Phpfetcher_Crawler_Abstrac
         $matchs = array();
         preg_match( $pattern, $url, $matchs );
         if( isset( $matchs[0] ) ){
-            return $news_data = intval( substr( $matchs, 3, -1 ) );
+            return $news_data = intval( substr( $matchs[0], 3, -1 ) );
         }
         return false;
     }
