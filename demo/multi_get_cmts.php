@@ -1,4 +1,16 @@
 <?php
+$arr_pid = array();
+for( $i = 0; $i < 20; $i++ ){
+        $pid = pcntl_fork();
+        if( $pid == 0 ){
+                break;
+        }
+        else{
+                $arr_pid[] = $pid;
+                echo "create $pid " . PHP_EOL;
+        }
+}
+
 //下面两行使得这个项目被下载下来后本文件能直接运行
 $demo_include_path = dirname(__FILE__) . '/../';
 set_include_path(get_include_path() . PATH_SEPARATOR . $demo_include_path);
@@ -64,14 +76,14 @@ while( $redis->scard( 'news:id:needCrawlComment' ) ){
 				if( !isCmtExist( $comment['id'] ) ){
 					$res = insertCmtInfo( $comment );
 					if( $res ){//插入数据成功
-						$redis->ZADD( 'comment:id:crawled', time(), $comment['id'] );
+						//$redis->ZADD( 'comment:id:crawled', time(), $comment['id'] );
 					}
 				}
 
 				if( !isUserExist( $user['userid'] ) ){
 					$res = insertUserInfo( $user );
 					if( $res ){//插入数据成功
-						$redis->ZADD( 'user:id:crawled', time(), $user['userid'] );
+						//$redis->ZADD( 'user:id:crawled', time(), $user['userid'] );
 					}
 				}
 			}
@@ -89,6 +101,21 @@ while( $redis->scard( 'news:id:needCrawlComment' ) ){
 	$redis->ZADD( 'news:id:crawledComment', time(), $cmt_id );
 
 }//while( $redis->scard( 'news:id:needCrawlComment' ) ){
+
+
+
+if( $pid != 0 ){
+        //sleep( 10 );
+        $info = array();
+        foreach( $arr_pid as $pid ){
+                echo "回收：$pid" . PHP_EOL;
+                pcntl_waitpid( $pid, $info[ $pid ] );
+        }
+        var_dump( $info );
+}
+
+
+
 
 function isCmtExist( $comment_id ){
 	$res = $GLOBALS['redis']->ZSCORE( 'comment:id:crawled', $comment_id );
